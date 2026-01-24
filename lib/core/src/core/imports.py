@@ -6,7 +6,11 @@ the cntrlr-core library, ensuring consistency and simplifying dependency
 management.
 """
 
-from pydantic_settings import BaseSettings  # noqa: F401
+from pydantic_settings import (  # noqa: F401
+    BaseSettings,
+    SettingsConfigDict,
+    YamlConfigSettingsSource,
+)
 from pydantic import (  # noqa: F401
     Field,
     BaseModel,

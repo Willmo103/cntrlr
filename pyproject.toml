@@ -1,13 +1,15 @@
 [project]
 name = "cntrlr"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.1.1"
+description = "CNTRLR modular application"
+authors = [
+    { name = "WIll Morris", email = "88165849+Willmo103@users.noreply.github.com" }
+]
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = []
 
 [tool.uv.workspace]
 members = [
-    "packages/*",
     "lib/*"
 ]
