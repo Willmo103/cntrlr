@@ -51,6 +51,7 @@ Design notes:
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional, Union
 from pathlib import Path
+import subprocess
 
 from pydantic import Field, field_validator, model_serializer
 from sqlalchemy import (
@@ -219,29 +220,80 @@ class VideoFile(BaseFileModel):
         **BaseFileModel.model_config,
     }
 
-    # TODO: Switch to using ffmpeg utils module for more robust video metadata extraction; TODO: Implement any utils methods needed for this
+    def _get_video_duration(self, file_path: Path) -> float:
+        """Helper method to get video duration using ffmpeg."""
+        import subprocess
+
+        result = subprocess.run(
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-show_entries",
+                "format=duration",
+                "-of",
+                "default=noprint_wrappers=1:nokey=1",
+                str(file_path),
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        return float(result.stdout)
+
+    def _get_video_codec(self, file_path: Path) -> str:
+        """Helper method to get video codec using ffmpeg."""
+
+        result = subprocess.run(
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-select_streams",
+                "v:0",
+                "-show_entries",
+                "stream=codec_name",
+                "-of",
+                "default=noprint_wrappers=1:nokey=1",
+                str(file_path),
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        return result.stdout.decode().strip()
+
+    def _get_video_resolution(self, file_path: Path) -> tuple[int, int]:
+        """Helper method to get video resolution using ffmpeg."""
+        result = subprocess.run(
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-select_streams",
+                "v:0",
+                "-show_entries",
+                "stream=width,height",
+                "-of",
+                "csv=s=x:p=0",
+                str(file_path),
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        resolution_str = result.stdout.decode().strip()
+        width, height = map(int, resolution_str.split("x"))
+        return width, height
+
     def populate(self, file_path: Path) -> None:
-        super().populate(file_path)
-        # Import locally to avoid hard dependency if opencv not installed in minimal envs
+        """Populate video-specific metadata using ffmpeg."""
         try:
-            import cv2
-
-            cap = cv2.VideoCapture(str(file_path))
-            if not cap.isOpened():
-                return
-
-            self.duration = cap.get(cv2.CAP_PROP_FRAME_COUNT) / (
-                cap.get(cv2.CAP_PROP_FPS) or 1
-            )
-            self.width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-            self.height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            self.resolution = (self.width, self.height)
-            self.codec = str(
-                int(cap.get(cv2.CAP_PROP_FOURCC))
-            )  # Simple int representation
-            cap.release()
-        except ImportError:
-            pass
+            self.duration = self._get_video_duration(file_path)
+            self.codec = self._get_video_codec(file_path)
+            self.width, self.height = self._get_video_resolution(file_path)
+            if self.width and self.height:
+                self.resolution = (self.width, self.height)
+        except Exception as e:
+            # Handle exceptions (e.g., ffprobe not found, invalid file)
+            raise Exception(f"Error populating video metadata: {e}")
 
 
 class VideoScanResultModel(BaseScanResult):

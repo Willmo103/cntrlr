@@ -618,7 +618,7 @@ class BaseFileModel(BaseModel):
         Returns:
             None
         """
-        from core.utils.files import (
+        from core.utils import (
             get_file_sha256,
             get_file_stat_model,
             get_mime_type,
