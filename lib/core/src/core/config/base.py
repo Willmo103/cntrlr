@@ -1,11 +1,50 @@
+# region Docstring
 """
-Application configuration module.
-Defines application paths and environment detection.
+core.config.base
 
-Loads environment variables from a .env file if present.
+Environment detection and application configuration utilities.
+
+Overview:
+- Provides a utility class for detecting the current application environment
+    (production, Docker, or development) based on environment variables or
+    path-based heuristics.
+- Exposes module-level constants for commonly needed configuration values
+    such as application root directory, environment type, and TTS models directory.
+
+Contents:
+- Classes:
+    - AppEnv:
+        A utility class for environment detection and path resolution. Provides
+        class methods to determine the current environment, retrieve the application
+        root directory, and locate the TTS models directory based on the detected
+        environment.
+
+- Module-level Constants:
+    - APP_ROOT (Path): The resolved root directory of the application.
+    - APP_ENV (Literal["prod", "docker", "dev"]): The detected application environment.
+    - TTS_MODELS_DIR (Path): The directory where TTS models are stored, resolved
+        based on the current environment.
+
+Environment Detection Logic:
+- Priority 1: Checks the ENVIRONMENT environment variable for explicit configuration.
+- Priority 2: Falls back to path-based detection:
+    - Paths starting with "/app" indicate Docker environment.
+    - Paths starting with "/srv" indicate production environment.
+    - All other paths default to development environment.
+
+Design Notes:
+- Environment detection is performed at import time to ensure consistent behavior
+    throughout the application lifecycle.
+- Path resolution uses absolute paths to avoid ambiguity in different execution contexts.
+- Development mode includes debug output to assist with configuration verification.
+
 """
+# endregion
+# region Imports
+from lib.core.src.core.imports import os, Path, Literal
 
-from core.imports import Literal, Path, os
+# endregion
+# region AppEnv Class
 
 
 class AppEnv:
@@ -56,6 +95,9 @@ class AppEnv:
             return Path(os.getenv("TTS_MODELS_DIR", cls.ROOT / "tts_models")).resolve()
 
 
+# endregion
+# region Module-level Constants
+
 # Application Data Path
 APP_ROOT: Path = AppEnv.app_root()
 """[Path] Root directory of the application."""
@@ -63,6 +105,7 @@ APP_ENV: Literal["prod", "docker", "dev"] = AppEnv.environment()
 """[Optional[Literal]] Environment type."""
 TTS_MODELS_DIR: Path = AppEnv.tts_models_dir()
 """[Path] Directory where TTS models are stored."""
+# endregion
 
 if APP_ENV == "dev":
     print("Environment: {}".format(APP_ENV))

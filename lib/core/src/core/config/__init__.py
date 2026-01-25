@@ -1,42 +1,86 @@
 """
-# Configuration module for the application.
-
-This is the *core* configuration module that defines settings for various components of the application, including API servers, database connections, authentication, and external services.
-It utilizes Pydantic's `BaseSettings` for easy environment variable management and type validation.
-
-## Members
-
-- `settings` (Settings): Singleton instance of application settings.
-
-## Classes
-- `Settings`: Main application configuration settings.
-- `ControllerAPISettings`: Configuration for the Controller API server.
-- `OllamaSettings`: Configuration for the Ollama LLM service.
-- `ConverterAPISettings`: Configuration for the Converter API server.
-- `MQTTSettings`: Configuration for MQTT broker connection.
-- `TTSServerSettings`: Configuration for the TTS service.
-- `STTSettings`: Configuration for the STT service.
-- `S3Settings`: Configuration for S3-compatible storage.
-- `CorsSettings`: Configuration for CORS.
-- `TemplatesSettings`: Configuration for template directories.
-- `UiServerSettings`: Configuration for the UI server.
-- `GotifySettings`: Configuration for Gotify notification service.
-- `ClipboardWatcherSettings`: Configuration for the Clipboard Watcher service.
-- `RedditSettings`: PRAW Client configuration settings.
-- `DatabaseSettings`: Database configuration settings.
-- `AuthSettings`: Authentication configuration settings.
-
-## Constants and Variables
-
-- `app_root` (Path): Root directory of the application.
+core.config
+Configuration and settings management for the Controller API application.
+Overview:
+- Provides Pydantic-based settings classes for all application services and components.
+- Each settings class inherits from FactoryBaseSettings and supports environment variable
+    overrides via Field aliases.
+- Settings are organized by service/component for modular configuration management.
+Contents:
+- Imports:
+    - Database: SQLite utility for CLI caching.
+    - FactoryBaseSettings: Base settings class with factory pattern support.
+    - get_settings: Factory function for retrieving settings instances (exported).
+- Settings Classes:
+    - ControllerAPISettings:
+        Configuration for the main Controller API server including host, port, and log level.
+    - OllamaSettings:
+        Configuration for the Ollama LLM service including host, default model, context size,
+        temperature, top_k, top_p, embedding model, and vision-language model settings.
+    - ConverterAPISettings:
+        Configuration for the Converter API server including host, port, and log level.
+    - MQTTSettings:
+        Configuration for MQTT broker connection including broker host, port, credentials,
+        and topic prefix.
+    - TTSServerSettings:
+        Configuration for Piper TTS service including host, port, log level, model directory,
+        output directory, default model, and speaker ID.
+    - STTSettings:
+        Configuration for Speech-to-Text service including sample rate, model size, log level,
+        host, and port.
+    - S3Settings:
+        S3-compatible storage configuration including endpoint URL, credentials, bucket names,
+        presigned URL timeout, and predefined bucket list for various content types.
+    - UiServerSettings:
+        Configuration for the UI server including host, port, log level, and directory paths
+        for templates and static files.
+    - GotifySettings:
+        Configuration for Gotify notification service including server URL, app token,
+        app name, and client token.
+    - ClipboardWatcherSettings:
+        Configuration for clipboard monitoring service including poll interval, thumbnail
+        dimensions, and paste directory.
+    - RedditSettings:
+        PRAW client configuration for Reddit API access including client ID, secret, and
+        user agent.
+    - DatabaseSettings:
+        PostgreSQL database connection configuration including user, password, host, port,
+        and database name.
+    - AuthSettings:
+        Authentication configuration including JWT secret key, algorithm, token expiration,
+        and admin credentials.
+    - CliSettings:
+        CLI-specific configuration including SQLite database path for caching with a
+        convenience property for database access.
+    - AppSettings:
+        Global application settings including app root directory, environment, timezone,
+        and computed properties for logs, cache, temp, and remotes directories.
+Design Notes:
+- All settings classes use Pydantic Field with aliases to support environment variable
+    configuration (e.g., CONTROLLER_API_HOST, OLLAMA_MODEL).
+- Default values are provided for all fields enabling zero-configuration startup in
+    development environments.
+- Path fields support both string and Path objects with automatic coercion.
+- The timezone field in AppSettings includes a custom validator to parse integer hour
+    offsets from environment variables.
+- Sensitive fields (passwords, tokens, secrets) have placeholder defaults that should
+    be overridden in production via environment variables.
 
 """
 
-from core.config.base import APP_ROOT, TTS_MODELS_DIR
-from core.config.factory import get_settings  # noqa: F401  This is used externally
-from core.config.factory import FactoryBaseSettings
-from core.imports import Any, Field, Path, field_validator, timedelta, timezone
 from sqlite_utils import Database
+
+from lib.core.src.core.imports import (
+    timedelta,
+    timezone,
+    Path,
+    Any,
+    Field,
+    field_validator,
+)
+from core.config.base import APP_ROOT, TTS_MODELS_DIR
+from core.config.factory import FactoryBaseSettings
+from core.config.factory import get_settings  # noqa: F401  This is used externally
 
 
 class ControllerAPISettings(FactoryBaseSettings):

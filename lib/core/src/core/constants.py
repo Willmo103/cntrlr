@@ -1,15 +1,52 @@
+# region Docstring
 """
-Constants used throughout the codebase.
-
-This includes patterns for files and directories to ignore during scans,
-supported image, data, and video formats, and mappings for markdown syntax
-highlighting.
+core.constants
+Shared constants and enumerations for file system scanning and processing operations.
+Overview:
+- Provides filtering lists for file system scanning operations to exclude common
+    non-essential directories and file types.
+- Defines mappings from file extensions to markdown syntax highlighters for code
+    documentation and display purposes.
+- Provides enumerations for commonly supported media and data file formats.
+Contents:
+- Filtering Lists:
+    - IGNORE_PARTS: List of directory/file name patterns to skip during recursive scans.
+        Includes version control directories, build artifacts, virtual environments,
+        IDE configurations, cache directories, and system folders.
+    - IGNORE_EXTENSIONS: List of file extensions to exclude from processing. Includes
+        compiled binaries, temporary files, databases, archives, and system files.
+- Extension Mappings:
+    - MD_XREF: Dictionary mapping file extensions and filenames to their corresponding
+        markdown/syntax highlighter language identifiers. Used for code block rendering
+        in documentation and display contexts.
+- Format Enumerations:
+    - ImageFormats: Enum of supported image file formats (.png, .jpeg, .jpg, .bmp, .svg,
+        .gif, .webp, .tiff, .heic, .nef).
+    - DataFormats: Enum of supported data file formats (.csv, .json, .xml, .yaml, .xlsx,
+        .parquet, .avro, .orc).
+    - VideoFormats: Enum of supported video file formats (.mp4, .avi, .mkv, .mov, .wmv,
+        .flv, .webm, .mpg, .m4v).
+- Derived Lists:
+    - IMAGE_FORMAT_LIST: List of image format extension strings derived from ImageFormats.
+    - DATA_FORMAT_LIST: List of data format extension strings derived from DataFormats.
+    - VIDEO_FORMAT_LIST: List of video format extension strings derived from VideoFormats.
+    - MARKDOWN_EXTENSIONS: List of all file extensions with markdown syntax highlighting support.
+Design Notes:
+- IGNORE_PARTS and IGNORE_EXTENSIONS are designed to be comprehensive defaults for
+    scanning operations, reducing noise from build artifacts and system files.
+- The MD_XREF mapping supports a wide variety of programming languages and configuration
+    file types for accurate syntax highlighting in rendered markdown.
+- Format enums inherit from both str and enum.Enum, allowing direct string comparison
+    while maintaining type safety and IDE autocompletion support.
 """
-
+# endregion
+# region Imports
 # Patterns for file parts to ignore (matched anywhere in path)
 import enum
 from typing import List
 
+# endregion
+# region Constants -- IGNORE_PARTS
 IGNORE_PARTS: List[str] = [
     ".hg",
     ".svn",
@@ -114,7 +151,8 @@ IGNORE_PARTS: List[str] = [
     ".python-version",
 ]
 """List[str]: List of file or directory parts to ignore during scans."""
-
+# endregion
+# region Constants -- IGNORE_EXTENSIONS
 IGNORE_EXTENSIONS: List[str] = [
     ".pyc",
     ".pyo",
@@ -157,7 +195,8 @@ IGNORE_EXTENSIONS: List[str] = [
     ".iso",
 ]
 """List[str]: List of file extensions to ignore during scans."""
-
+# endregion
+# region Constants -- MD_XREF
 MD_XREF = {
     ".feature": "cucumber",
     ".abap": "abap",
@@ -387,6 +426,8 @@ MD_XREF = {
     ".yml": "yaml",
 }
 """Dict[str, str]: Mapping of file extensions to markdown syntax highlighters."""
+# endregion
+# region Constants -- Format Enums
 
 
 class ImageFormats(str, enum.Enum):
@@ -431,6 +472,9 @@ class VideoFormats(str, enum.Enum):
     M4V = ".m4v"  # iTunes Video File
 
 
+# endregion
+# region Constants -- Derived Lists
+
 IMAGE_FORMAT_LIST: List[str] = [fmt.value for fmt in ImageFormats]
 """List[str]: Lists of supported formats for images, data, and videos."""
 DATA_FORMAT_LIST: List[str] = [fmt.value for fmt in DataFormats]
@@ -439,6 +483,9 @@ VIDEO_FORMAT_LIST: List[str] = [fmt.value for fmt in VideoFormats]
 """List[str]: Lists of supported formats for images, data, and videos."""
 MARKDOWN_EXTENSIONS: list[str] = list(MD_XREF.keys())
 """[List[str]]: List of markdown file extensions for syntax highlighting."""
+
+# endregion
+
 
 __all__ = [
     "IGNORE_PARTS",

@@ -1,17 +1,60 @@
-import json
-from functools import lru_cache
-from typing import Any, Type, TypeVar
+# region Docstring
+"""
+core.config.factory
+Factory module for creating and managing application settings with multi-source configuration support.
+Overview:
+- Provides a custom Pydantic BaseSettings subclass that supports hierarchical configuration
+    loading from multiple sources including YAML files, environment variables, and .env files.
+- Implements a cached factory function for efficient settings instantiation across the application.
+Contents:
+- Constants:
+    - T: TypeVar bound to BaseSettings for generic typing support in the factory function.
+- Classes:
+    - FactoryBaseSettings:
+        Custom BaseSettings subclass that extends Pydantic's configuration capabilities to support
+        YAML configuration files alongside standard environment variable loading. Implements a
+        priority-based configuration resolution system.
+        Configuration Priority (highest to lowest):
+            1. Environment variables
+            2. .env file values
+            3. YAML files (environment-specific config.{env}.yaml)
+            4. YAML files (default config.yaml)
+            5. Field defaults
+        Key Features:
+            - Automatic loading of config.yaml and config.{APP_ENV}.yaml from APP_ROOT
+            - Graceful handling of non-JSON values in .env files (e.g., CORS='*')
+            - UTF-8 encoded .env file support
+            - Extra fields are ignored to prevent validation errors from unknown config keys
+- Functions:
+    - get_settings(settings_cls: Type[T]) -> T:
+        LRU-cached factory function that instantiates and returns settings objects. Caching
+        ensures configuration files are only read once per settings class, improving performance
+        for frequently accessed configuration values.
+Design notes:
+- The settings_customise_sources method overrides Pydantic's default source chain to inject
+    YAML configuration support while maintaining compatibility with standard env/dotenv loading.
+- The decode_complex_value method provides fault-tolerant parsing of complex values, returning
+    raw strings when JSON decoding fails rather than raising exceptions.
+- LRU caching on get_settings prevents redundant file I/O and parsing when the same settings
+    class is requested multiple times during application lifecycle.
+"""
 
-from pydantic.fields import FieldInfo
-from pydantic_settings import (
+# region Imports
+from functools import lru_cache
+from typing import Type, TypeVar
+from core.imports import (
     BaseSettings,
     PydanticBaseSettingsSource,
     SettingsConfigDict,
     YamlConfigSettingsSource,
+    json,
+    Any,
 )
-
+from pydantic.fields import FieldInfo
 from .base import APP_ENV, APP_ROOT
 
+# endregion
+# region FactoryBaseSettings Class
 T = TypeVar("T", bound=BaseSettings)
 
 
@@ -66,6 +109,10 @@ class FactoryBaseSettings(BaseSettings):
         return value
 
 
+# endregion
+# region get_settings Factory Function
+
+
 @lru_cache
 def get_settings(settings_cls: Type[T]) -> T:
     """
@@ -73,3 +120,6 @@ def get_settings(settings_cls: Type[T]) -> T:
     Results are cached so we don't re-read files every time.
     """
     return settings_cls()
+
+
+# endregion
