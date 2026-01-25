@@ -1,13 +1,15 @@
-from functools import lru_cache
 import json
+from functools import lru_cache
 from typing import Any, Type, TypeVar
+
+from pydantic.fields import FieldInfo
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
     SettingsConfigDict,
     YamlConfigSettingsSource,
 )
-from pydantic.fields import FieldInfo
+
 from .base import APP_ENV, APP_ROOT
 
 T = TypeVar("T", bound=BaseSettings)

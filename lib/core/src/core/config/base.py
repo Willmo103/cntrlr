@@ -5,10 +5,7 @@ Defines application paths and environment detection.
 Loads environment variables from a .env file if present.
 """
 
-# load_dotenv()
-
-
-from core.imports import os, Path, Literal
+from core.imports import Literal, Path, os
 
 
 class AppEnv:

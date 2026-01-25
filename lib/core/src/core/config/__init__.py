@@ -32,21 +32,11 @@ It utilizes Pydantic's `BaseSettings` for easy environment variable management a
 
 """
 
-from datetime import timedelta, timezone
-from pathlib import Path
-from typing import Any
-
-from pydantic import Field, field_validator
-
-from sqlite_utils import Database
-
 from core.config.base import APP_ROOT, TTS_MODELS_DIR
-from core.config.factory import FactoryBaseSettings
 from core.config.factory import get_settings  # noqa: F401  This is used externally
-
-# from dotenv import load_dotenv
-
-# load_dotenv()
+from core.config.factory import FactoryBaseSettings
+from core.imports import Any, Field, Path, field_validator, timedelta, timezone
+from sqlite_utils import Database
 
 
 class ControllerAPISettings(FactoryBaseSettings):
@@ -532,18 +522,3 @@ class AppSettings(FactoryBaseSettings):
             except ValueError:
                 pass
         return v
-
-
-if __name__ == "__main__":
-    settings: AppSettings = get_settings(AppSettings)
-    print("App Root: {}".format(settings.app_root.as_posix()))
-    print("Environment: {}".format(settings.environment))
-    print("Timezone: {}".format(settings.tz))
-    db_settings: DatabaseSettings = get_settings(DatabaseSettings)
-    print(
-        "Database Config: {}".format(
-            db_settings.model_dump_json(exclude={"db_pass"}, indent=2)
-        )
-    )
-    ollama_settings: OllamaSettings = get_settings(OllamaSettings)
-    print("Ollama Config: {}".format(ollama_settings.model_dump_json(indent=2)))
