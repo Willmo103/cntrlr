@@ -300,7 +300,7 @@ class VideoFile(BaseFileModel):
             raise Exception(f"Error populating video metadata: {e}")
 
 
-class VideoScanResultModel(BaseScanResult):
+class VideoScanResult(BaseScanResult):
     """
     Model representing the result of a video scan.
 
@@ -363,4 +363,4 @@ class VideoScanResultModel(BaseScanResult):
 #     gif_b64_data: Optional[str] = Field(None, description="Base64 encoded preview GIF data for the video")
 # endregion
 
-__all__ = ["VideoFile_Table", "VideoFile", "VideoScanResultModel"]
+__all__ = ["VideoFile_Table", "VideoFile", "VideoScanResult"]

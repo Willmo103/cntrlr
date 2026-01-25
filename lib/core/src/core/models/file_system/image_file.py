@@ -379,7 +379,7 @@ class ImageFile(BaseFileModel):
         self.is_nsfw = not self.is_nsfw
 
 
-class ImageScanResultModel(BaseScanResult):
+class ImageScanResult(BaseScanResult):
     """
     Model representing the result of an image scan.
 
@@ -414,4 +414,4 @@ class ImageScanResultModel(BaseScanResult):
 
 # endregion
 
-__all__ = ["ImageFileEntity", "ImageFile", "ImageScanResultModel"]
+__all__ = ["ImageFileEntity", "ImageFile", "ImageScanResult"]
