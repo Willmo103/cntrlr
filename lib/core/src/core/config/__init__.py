@@ -1,3 +1,4 @@
+# region Module Docstring
 """
 core.config
 Configuration and settings management for the Controller API application.
@@ -67,22 +68,25 @@ Design Notes:
     be overridden in production via environment variables.
 
 """
+# endregion
+# region Imports
 
 from sqlite_utils import Database
+from datetime import timedelta, timezone
+from pathlib import Path
+from typing import Any
+from pydantic import Field, field_validator
 
-from lib.core.src.core.imports import (
-    timedelta,
-    timezone,
-    Path,
-    Any,
-    Field,
-    field_validator,
-)
 from core.config.base import APP_ROOT, TTS_MODELS_DIR
 from core.config.factory import FactoryBaseSettings
 from core.config.factory import get_settings  # noqa: F401  This is used externally
 
 
+# endregion
+# region Server Settings Classes
+
+
+# region ControllerAPISettings Class
 class ControllerAPISettings(FactoryBaseSettings):
     """
     Controller API configuration settings.
@@ -105,6 +109,188 @@ class ControllerAPISettings(FactoryBaseSettings):
     )
 
 
+# endregion
+# region ConverterAPISettings Class
+class ConverterAPISettings(FactoryBaseSettings):
+    """
+    Converter API configuration settings.
+    """
+
+    host: str = Field(
+        default="localhost",
+        alias="CONVERTER_API_HOST",
+        description="Host for the Converter API server.",
+    )
+    port: int = Field(
+        default=8112,
+        alias="CONVERTER_API_PORT",
+        description="Port for the Converter API server.",
+    )
+    log_level: str = Field(
+        default="debug",
+        alias="CONVERTER_API_LOG_LEVEL",
+        description="Log level for the Converter API server.",
+    )
+
+
+# endregion
+# region TTSServerSettings Class
+class TTSServerSettings(FactoryBaseSettings):
+    """
+    Configuration for the Piper TTS Service.
+    """
+
+    host: str = Field(
+        default="localhost",
+        description="Host for the TTS service.",
+        alias="TTS_SERVER_HOST",
+    )
+    port: int = Field(
+        default=8113,
+        description="Port for the TTS service.",
+        alias="TTS_SERVER_PORT",
+    )
+    log_level: str = Field(
+        default="info",
+        description="Log level for the TTS service.",
+        alias="TTS_SERVER_LOG_LEVEL",
+    )
+    model_dir: Path = Field(
+        default=TTS_MODELS_DIR or Path(APP_ROOT / "tts_models"),
+        description="Directory where TTS models are stored.",
+        alias="TTS_MODELS_DIR",
+    )
+    output_dir: Path = Field(
+        default=APP_ROOT / "audio",
+        description="Directory where generated audio files are stored.",
+        alias="TTS_OUTPUT_DIR",
+    )
+    default_model: str = Field(
+        default="en_US-libritts-high",
+        description="Default TTS model to use.",
+        alias="TTS_MODEL",
+    )
+    default_speaker: int = Field(
+        default=0,
+        description="Default speaker ID for multi-speaker models.",
+        alias="TTS_SPEAKER_ID",
+    )
+
+
+# endregion
+# region STTSettings Class
+class STTSettings(FactoryBaseSettings):
+    """
+    Configuration for the STT Service.
+    """
+
+    sample_rate: int = Field(
+        default=16000,
+        description="Sample rate for audio processing.",
+        alias="STT_SAMPLE_RATE",
+    )
+    model_size: str = Field(
+        default="large-v3",
+        description="Size of the STT model to use.",
+        alias="STT_MODEL",
+    )
+    log_level: str = Field(
+        default="info",
+        description="Log level for the STT service.",
+        alias="STT_LOG_LEVEL",
+    )
+    port: int = Field(
+        default=8114,
+        description="Port for the STT service.",
+        alias="STT_SERVICE_PORT",
+    )
+    host: str = Field(
+        default="localhost",
+        description="Host for the STT service.",
+        alias="STT_SERVICE_HOST",
+    )
+
+
+# endregion
+# region UiServerSettings Class
+class UiServerSettings(FactoryBaseSettings):
+    """
+    Configuration for the UI Server.
+    """
+
+    host: str = Field(
+        default="localhost",
+        description="Host for the UI server.",
+        alias="UI_SERVER_HOST",
+    )
+    port: int = Field(
+        default=8115,
+        description="Port for the UI server.",
+        alias="UI_SERVER_PORT",
+    )
+    log_level: str = Field(
+        default="debug",
+        description="Log level for the UI server.",
+        alias="UI_SERVER_LOG_LEVEL",
+    )
+
+    base_dir: Path = Field(
+        default=Path(APP_ROOT / "src" / "ui_server"),
+        description="Base directory for UI server templates.",
+        frozen=True,
+    )
+    template_dir: Path = Field(
+        default=Path(APP_ROOT / "src" / "ui_server" / "templates"),
+        description="Directory for UI server HTML templates.",
+        frozen=True,
+    )
+    static_dir: Path = Field(
+        default=Path(APP_ROOT / "src" / "ui_server" / "static"),
+        description="Directory for UI server static files.",
+        frozen=True,
+    )
+
+
+# region Server AuthSettings Class
+class AuthSettings(FactoryBaseSettings):
+    """
+    Authentication configuration settings.
+    """
+
+    secret_key: str = Field(
+        default="super-secret-key-change-me",
+        alias="SECRET_KEY",
+        description="Secret key for JWT and other security-related operations.",
+    )
+    algorithm: str = Field(
+        default="HS256",
+        alias="ALGORITHM",
+        description="Algorithm used for JWT encoding and decoding.",
+    )
+    access_token_expire_minutes: int = Field(
+        default=30,
+        alias="ACCESS_TOKEN_EXPIRE_MINUTES",
+        description="Access token expiration time in minutes.",
+    )
+    admin_username: str = Field(
+        default="admin",
+        alias="ADMIN_USERNAME",
+        description="Admin username for the application.",
+    )
+    admin_password: str = Field(
+        default="admin",
+        alias="ADMIN_PASSWORD",
+        description="Admin password for the application.",
+    )
+
+
+# endregion
+# endregion
+# endregion
+# region Services Settings Classes
+
+
+# region OllamaSettings Class
 class OllamaSettings(FactoryBaseSettings):
     """
     Configuration for the Ollama LLM Service.
@@ -152,28 +338,8 @@ class OllamaSettings(FactoryBaseSettings):
     )
 
 
-class ConverterAPISettings(FactoryBaseSettings):
-    """
-    Converter API configuration settings.
-    """
-
-    host: str = Field(
-        default="localhost",
-        alias="CONVERTER_API_HOST",
-        description="Host for the Converter API server.",
-    )
-    port: int = Field(
-        default=8112,
-        alias="CONVERTER_API_PORT",
-        description="Port for the Converter API server.",
-    )
-    log_level: str = Field(
-        default="debug",
-        alias="CONVERTER_API_LOG_LEVEL",
-        description="Log level for the Converter API server.",
-    )
-
-
+# endregion
+# region MQTTSettings Class
 class MQTTSettings(FactoryBaseSettings):
     """
     Configuration for the MQTT Broker.
@@ -206,80 +372,8 @@ class MQTTSettings(FactoryBaseSettings):
     )
 
 
-class TTSServerSettings(FactoryBaseSettings):
-    """
-    Configuration for the Piper TTS Service.
-    """
-
-    host: str = Field(
-        default="localhost",
-        description="Host for the TTS service.",
-        alias="TTS_SERVER_HOST",
-    )
-    port: int = Field(
-        default=8113,
-        description="Port for the TTS service.",
-        alias="TTS_SERVER_PORT",
-    )
-    log_level: str = Field(
-        default="info",
-        description="Log level for the TTS service.",
-        alias="TTS_SERVER_LOG_LEVEL",
-    )
-    model_dir: Path = Field(
-        default=TTS_MODELS_DIR or Path(APP_ROOT / "tts_models"),
-        description="Directory where TTS models are stored.",
-        alias="TTS_MODELS_DIR",
-    )
-    output_dir: Path = Field(
-        default=APP_ROOT / "audio",
-        description="Directory where generated audio files are stored.",
-        alias="TTS_OUTPUT_DIR",
-    )
-    default_model: str = Field(
-        default="en_US-libritts-high",
-        description="Default TTS model to use.",
-        alias="TTS_MODEL",
-    )
-    default_speaker: int = Field(
-        default=0,
-        description="Default speaker ID for multi-speaker models.",
-        alias="TTS_SPEAKER_ID",
-    )
-
-
-class STTSettings(FactoryBaseSettings):
-    """
-    Configuration for the STT Service.
-    """
-
-    sample_rate: int = Field(
-        default=16000,
-        description="Sample rate for audio processing.",
-        alias="STT_SAMPLE_RATE",
-    )
-    model_size: str = Field(
-        default="large-v3",
-        description="Size of the STT model to use.",
-        alias="STT_MODEL",
-    )
-    log_level: str = Field(
-        default="info",
-        description="Log level for the STT service.",
-        alias="STT_LOG_LEVEL",
-    )
-    port: int = Field(
-        default=8114,
-        description="Port for the STT service.",
-        alias="STT_SERVICE_PORT",
-    )
-    host: str = Field(
-        default="localhost",
-        description="Host for the STT service.",
-        alias="STT_SERVICE_HOST",
-    )
-
-
+# endregion
+# region S3Settings Class
 class S3Settings(FactoryBaseSettings):
     """
     S3-compatible storage configuration settings.
@@ -328,44 +422,8 @@ class S3Settings(FactoryBaseSettings):
     """List of all required buckets."""
 
 
-class UiServerSettings(FactoryBaseSettings):
-    """
-    Configuration for the UI Server.
-    """
-
-    host: str = Field(
-        default="localhost",
-        description="Host for the UI server.",
-        alias="UI_SERVER_HOST",
-    )
-    port: int = Field(
-        default=8115,
-        description="Port for the UI server.",
-        alias="UI_SERVER_PORT",
-    )
-    log_level: str = Field(
-        default="debug",
-        description="Log level for the UI server.",
-        alias="UI_SERVER_LOG_LEVEL",
-    )
-
-    base_dir: Path = Field(
-        default=Path(APP_ROOT / "src" / "ui_server"),
-        description="Base directory for UI server templates.",
-        frozen=True,
-    )
-    template_dir: Path = Field(
-        default=Path(APP_ROOT / "src" / "ui_server" / "templates"),
-        description="Directory for UI server HTML templates.",
-        frozen=True,
-    )
-    static_dir: Path = Field(
-        default=Path(APP_ROOT / "src" / "ui_server" / "static"),
-        description="Directory for UI server static files.",
-        frozen=True,
-    )
-
-
+# endregion
+# region GotifySettings Class
 class GotifySettings(FactoryBaseSettings):
     """
     Configuration for Gotify Notification Service.
@@ -393,6 +451,8 @@ class GotifySettings(FactoryBaseSettings):
     )
 
 
+# endregion
+# region ClipboardWatcherSettings Class
 class ClipboardWatcherSettings(FactoryBaseSettings):
     """
     Configuration for the Clipboard Watcher Service.
@@ -415,6 +475,8 @@ class ClipboardWatcherSettings(FactoryBaseSettings):
     )
 
 
+# endregion
+# region RedditSettings Class
 class RedditSettings(FactoryBaseSettings):
     """
     PRAW Client configuration settings.
@@ -437,6 +499,8 @@ class RedditSettings(FactoryBaseSettings):
     )
 
 
+# endregion
+# region DatabaseSettings Class
 class DatabaseSettings(FactoryBaseSettings):
     """
     Database configuration settings.
@@ -469,38 +533,9 @@ class DatabaseSettings(FactoryBaseSettings):
     )
 
 
-class AuthSettings(FactoryBaseSettings):
-    """
-    Authentication configuration settings.
-    """
-
-    secret_key: str = Field(
-        default="super-secret-key-change-me",
-        alias="SECRET_KEY",
-        description="Secret key for JWT and other security-related operations.",
-    )
-    algorithm: str = Field(
-        default="HS256",
-        alias="ALGORITHM",
-        description="Algorithm used for JWT encoding and decoding.",
-    )
-    access_token_expire_minutes: int = Field(
-        default=30,
-        alias="ACCESS_TOKEN_EXPIRE_MINUTES",
-        description="Access token expiration time in minutes.",
-    )
-    admin_username: str = Field(
-        default="admin",
-        alias="ADMIN_USERNAME",
-        description="Admin username for the application.",
-    )
-    admin_password: str = Field(
-        default="admin",
-        alias="ADMIN_PASSWORD",
-        description="Admin password for the application.",
-    )
-
-
+# endregion
+# endregion
+# region CliSettings Class
 class CliSettings(FactoryBaseSettings):
     """
     CLI configuration settings.
@@ -518,6 +553,8 @@ class CliSettings(FactoryBaseSettings):
         return Database(self.cli_db_path)
 
 
+# endregion
+# region AppSettings Class
 class AppSettings(FactoryBaseSettings):
     """Application configuration settings."""
 
@@ -566,3 +603,24 @@ class AppSettings(FactoryBaseSettings):
             except ValueError:
                 pass
         return v
+
+
+# endregion
+
+__all__ = [
+    "AppSettings",
+    "AuthSettings",
+    "ClipboardWatcherSettings",
+    "CliSettings",
+    "ControllerAPISettings",
+    "ConverterAPISettings",
+    "DatabaseSettings",
+    "GotifySettings",
+    "MQTTSettings",
+    "RedditSettings",
+    "S3Settings",
+    "STTSettings",
+    "TTSServerSettings",
+    "UiServerSettings",
+    "get_settings",
+]

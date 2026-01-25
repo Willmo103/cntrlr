@@ -41,7 +41,9 @@ Design Notes:
 """
 # endregion
 # region Imports
-from lib.core.src.core.imports import os, Path, Literal
+import os
+from pathlib import Path
+from typing import Literal
 
 # endregion
 # region AppEnv Class
@@ -107,6 +109,7 @@ TTS_MODELS_DIR: Path = AppEnv.tts_models_dir()
 """[Path] Directory where TTS models are stored."""
 # endregion
 
+# Debug output in development mode (Makes you check your config early)
 if APP_ENV == "dev":
     print("Environment: {}".format(APP_ENV))
     print("TTS Models Dir: {}".format(TTS_MODELS_DIR.as_posix()))

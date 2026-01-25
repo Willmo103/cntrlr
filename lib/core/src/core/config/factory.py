@@ -41,14 +41,13 @@ Design notes:
 
 # region Imports
 from functools import lru_cache
-from typing import Type, TypeVar
-from core.imports import (
+from typing import Type, TypeVar, Any
+import json
+from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
     SettingsConfigDict,
     YamlConfigSettingsSource,
-    json,
-    Any,
 )
 from pydantic.fields import FieldInfo
 from .base import APP_ENV, APP_ROOT
