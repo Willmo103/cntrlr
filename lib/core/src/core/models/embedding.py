@@ -26,13 +26,13 @@ Design notes:
 - Vector dimension (768) is configured for EmbeddingGemma models; adjust if using
     different embedding models with varying output dimensions.
 """
+from core.database import Base
+
 # endregion
 # region Imports
 from pgvector.sqlalchemy import VECTOR
 from sqlalchemy import JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
-
-from core.database import Base
 
 
 # endregion

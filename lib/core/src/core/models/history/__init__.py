@@ -1,4 +1,3 @@
-from .clipboard_history import ClipboardHistoryEntity, ClipboardHistory
-
+from .clipboard_history import ClipboardHistory, ClipboardHistoryEntity
 
 __all__ = ["ClipboardHistoryEntity", "ClipboardHistory"]

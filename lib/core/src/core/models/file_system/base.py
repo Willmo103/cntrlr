@@ -67,10 +67,10 @@ Design Notes:
 # region Imports
 from datetime import datetime
 from hashlib import sha256
+from pathlib import Path
 from typing import Literal, Optional, Union
+
 from core import settings
-
-
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -79,9 +79,6 @@ from pydantic import (
     model_serializer,
     model_validator,
 )
-
-
-from pathlib import Path
 
 # endregion
 # region Base File System Models

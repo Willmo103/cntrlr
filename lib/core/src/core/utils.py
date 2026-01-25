@@ -1,22 +1,19 @@
-from pathlib import Path
 import stat
 import sys
+from pathlib import Path
 
 from core.constants import (
+    DATA_FORMAT_LIST,
     IMAGE_FORMAT_LIST,
     MARKDOWN_EXTENSIONS,
     MD_XREF,
     VIDEO_FORMAT_LIST,
-    DATA_FORMAT_LIST,
 )
-from core.models.file_system.base import (
-    WindowsFileStat,
-)
-from core.models.file_system.base import BaseFileStat, MacOSFileStat
-from core.models.file_system.image_file import ImageFile
-from core.models.file_system.video_file import VideoFile
-from core.models.file_system.sqlite_file import SQLiteFile
 from core.models.file_system.audio_file import AudioFile
+from core.models.file_system.base import BaseFileStat, MacOSFileStat, WindowsFileStat
+from core.models.file_system.image_file import ImageFile
+from core.models.file_system.sqlite_file import SQLiteFile
+from core.models.file_system.video_file import VideoFile
 
 
 def is_markdown_formattable(path: Path) -> bool:
@@ -240,9 +237,7 @@ def get_file_stat_model(file_path: Path) -> "BaseFileStat":  # type: ignore # no
         >>> print(stat_model)
         LinuxFileStatModel(...)
     """
-    from core.models.file_system.base import (
-        LinuxFileStat,
-    )
+    from core.models.file_system.base import LinuxFileStat
 
     file_stat = stat(file_path)
 

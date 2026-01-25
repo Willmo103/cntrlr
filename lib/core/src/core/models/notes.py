@@ -33,12 +33,11 @@ Design notes:
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, field_serializer, field_validator
 import yaml
+from core.database import Base
+from pydantic import BaseModel, ConfigDict, field_serializer, field_validator
 from sqlalchemy import JSON, DateTime, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
-
-from core.database import Base
 
 # endregion
 

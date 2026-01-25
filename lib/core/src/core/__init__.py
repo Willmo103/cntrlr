@@ -10,9 +10,9 @@ sources such as environment variables and YAML files.
 """
 
 from . import constants  # noqa: F401
-from .config import (  # noqa: F401
+from .config import (
     AppSettings,
-    AuthSettings,
+    AuthSettings,  # noqa: F401
     ClipboardWatcherSettings,
     CliSettings,
     ControllerAPISettings,

@@ -36,11 +36,10 @@ Design notes:
 # region Imports
 from datetime import datetime
 
+from core.database import Base
 from sqlalchemy import DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
-
-from core.database import Base
 
 
 # endregion

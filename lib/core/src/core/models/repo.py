@@ -66,6 +66,14 @@ Design notes:
 # region Imports
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional, Union
+
+from core.database import Base
+from core.models.file_system.base import (
+    BaseDirectory,
+    BaseScanResult,
+    BaseTextFile,
+    TextFileLine,
+)
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_serializer
 from sqlalchemy import (
     DDL,
@@ -77,15 +85,10 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
-    func,
     event,
+    func,
 )
 from sqlalchemy.orm import Mapped, mapped_column
-
-
-from core.database import Base
-from core.models.file_system.base import BaseDirectory, BaseTextFile, TextFileLine
-from core.models.file_system.base import BaseScanResult
 
 
 # endregion

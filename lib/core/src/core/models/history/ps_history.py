@@ -22,7 +22,7 @@
 # -ContentType "application/json"
 # The server will then store this information in the ps_history table for auditing and analysis.
 
-## Example Profile Script Addition:
+# Example Profile Script Addition:
 # $global:OriginalPrompt = $function:prompt
 # function prompt {
 #     $command = (Get-History -Count 1).CommandLine

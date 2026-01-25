@@ -39,17 +39,20 @@ Design notes:
     class is requested multiple times during application lifecycle.
 """
 
+import json
+
 # region Imports
 from functools import lru_cache
-from typing import Type, TypeVar, Any
-import json
+from typing import Any, Type, TypeVar
+
+from pydantic.fields import FieldInfo
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
     SettingsConfigDict,
     YamlConfigSettingsSource,
 )
-from pydantic.fields import FieldInfo
+
 from .base import APP_ENV, APP_ROOT
 
 # endregion

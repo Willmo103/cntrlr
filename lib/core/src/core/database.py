@@ -22,6 +22,5 @@ Design notes:
 
 from sqlalchemy.orm import declarative_base
 
-
 Base = declarative_base()
 """Singleton `declarative_base` instance for ORM models."""

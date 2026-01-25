@@ -34,23 +34,15 @@ Design notes:
 # endregion
 # region Imports
 from datetime import datetime
-from typing import Any, List, Literal, Optional
 from pathlib import Path
+from typing import Any, List, Literal, Optional
 
-from pydantic import ConfigDict, field_validator, model_serializer
-from sqlalchemy import (
-    Computed,
-    DateTime,
-    Integer,
-    String,
-    Text,
-    func,
-)
-from sqlalchemy.orm import Mapped, mapped_column
-
+from core import SQLiteFile
 from core.database import Base
 from core.models.file_system.base import BaseFileModel, BaseFileStat, FilePath
-from core import SQLiteFile
+from pydantic import ConfigDict, field_validator, model_serializer
+from sqlalchemy import Computed, DateTime, Integer, String, Text, func
+from sqlalchemy.orm import Mapped, mapped_column
 
 
 # endregion

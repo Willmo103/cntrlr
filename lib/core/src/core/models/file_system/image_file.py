@@ -47,30 +47,20 @@ Design notes:
 import base64
 from datetime import datetime
 from io import BytesIO
-from typing import Any, Dict, List, Literal, Optional, Union
 from pathlib import Path
-
-from PIL import ExifTags, Image
-from pydantic import Field, field_validator, model_serializer
-from sqlalchemy import (
-    JSON,
-    Boolean,
-    Computed,
-    DateTime,
-    Integer,
-    String,
-    Text,
-    func,
-)
-from sqlalchemy.orm import Mapped, mapped_column
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from core.database import Base
 from core.models.file_system.base import (
     BaseFileModel,
     BaseFileStat,
-    FilePath,
     BaseScanResult,
+    FilePath,
 )
+from PIL import ExifTags, Image
+from pydantic import Field, field_validator, model_serializer
+from sqlalchemy import JSON, Boolean, Computed, DateTime, Integer, String, Text, func
+from sqlalchemy.orm import Mapped, mapped_column
 
 
 # endregion

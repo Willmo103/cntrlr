@@ -73,17 +73,10 @@ Design notes:
 # endregion
 # region Imports
 
+import json
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional, Union
-import json
 
-from pydantic import (
-    BaseModel,
-    Field,
-    field_serializer,
-    field_validator,
-    model_serializer,
-)
 from core.database import Base
 from core.models.file_system.base import (
     BaseDirectory,
@@ -91,8 +84,13 @@ from core.models.file_system.base import (
     BaseScanResult,
     TextFileLine,
 )
-
-
+from pydantic import (
+    BaseModel,
+    Field,
+    field_serializer,
+    field_validator,
+    model_serializer,
+)
 from sqlalchemy import (
     DDL,
     JSON,
@@ -103,8 +101,8 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
-    func,
     event,
+    func,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
