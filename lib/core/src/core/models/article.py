@@ -109,6 +109,21 @@ class ArticleEntity(Base):
             updated_at=self.updated_at,
         )
 
+    @property
+    def dict(self) -> dict[str, Optional[object]]:
+        """Return a dictionary representation of the ArticleEntity."""
+        return {
+            "id": self.id,
+            "url": self.url,
+            "html_content": self.html_content,
+            "markdown_content": self.markdown_content,
+            "cleaned_markdown_content": self.cleaned_markdown_content,
+            "article_summary": self.article_summary,
+            "tags": self.tags,
+            "added_at": self.added_at,
+            "updated_at": self.updated_at,
+        }
+
 
 # endregion
 # region Pydantic Model
@@ -193,6 +208,18 @@ class Article(BaseModel):
         if isinstance(v, set) or isinstance(v, tuple):
             return list(v)
         return v
+
+    @property
+    def entity(self) -> ArticleEntity:
+        return ArticleEntity(
+            id=self.id if self.id is not None else None,
+            url=self.url,
+            html_content=self.html_content if self.html_content is not None else "",
+            markdown_content=self.markdown_content,
+            cleaned_markdown_content=self.cleaned_markdown_content,
+            article_summary=self.article_summary,
+            tags=self.tags,
+        )
 
 
 # endregion

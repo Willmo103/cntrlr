@@ -188,7 +188,23 @@ class RepoEntity(Base):
 
     @property
     def model(self) -> "Repo":
-        return Repo.model_validate(**self.__dict__)
+        return Repo(
+            id=self.id,
+            stat_json=self.stat_json,
+            path_json=self.path_json,
+            tags=self.tags,
+            short_description=self.short_description,
+            long_description=self.long_description,
+            frozen=self.frozen,
+            type=self.type,
+            url=self.url,
+            git_metadata=(
+                GitMetadata.model_validate(self.git_metadata)
+                if self.git_metadata
+                else None
+            ),
+            last_seen=self.last_seen,
+        )
 
 
 class RepoFileEntity(Base):
@@ -566,11 +582,6 @@ class RepoScanResult(BaseScanResult):
             ),
             "model": self.model.model_dump(),
         }
-
-    model_config = ConfigDict(
-        arbitrary_types_allowed=True,
-        from_attributes=True,
-    )
 
 
 # endregion

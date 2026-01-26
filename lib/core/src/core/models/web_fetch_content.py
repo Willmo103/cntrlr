@@ -180,6 +180,22 @@ class WebFetchContent(BaseModel):
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
 
+    @property
+    def entity(self) -> WebFetchContentEntity:
+        return WebFetchContentEntity(
+            id=self.id if self.id is not None else None,
+            uuid=self.uuid,
+            url=self.url,
+            title=self.title,
+            short_description=self.short_description,
+            long_description=self.long_description,
+            tags=self.tags,
+            summary=self.summary,
+            markdown_path=self.markdown_path,
+            created_at=self.added_at,
+            updated_at=self.updated_at,
+        )
+
     model_config = ConfigDict(from_attributes=True)
 
 
