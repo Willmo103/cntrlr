@@ -145,6 +145,24 @@ class DataFileEntity(Base):
         )
 
     @property
+    def dict(self) -> dict[str, Any]:
+        """Return a dictionary representation of the DataFileEntity."""
+        return {
+            "id": self.id,
+            "sha256": self.sha256,
+            "path_json": self.path_json,
+            "stat_json": self.stat_json,
+            "mime_type": self.mime_type,
+            "tags": self.tags,
+            "short_description": self.short_description,
+            "long_description": self.long_description,
+            "frozen": self.frozen,
+            "content": self.content,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
+    @property
     def stat_model(self) -> BaseFileStat:
         """Return the FileStat model representation of the file's stat_json."""
         return BaseFileStat.model_validate(self.stat_json)
@@ -163,7 +181,7 @@ class DataFileEntity(Base):
     def summary(self) -> dict[str, str]:
         """Return a summary dictionary of the DataFileEntity."""
         return {
-            "file_id": self.id,
+            "file_id": self.id if self.id else "",
             "path": self.path_model.Path.as_posix(),
             "sha256": self.sha256,
             "mimetype": self.mime_type or "unknown",

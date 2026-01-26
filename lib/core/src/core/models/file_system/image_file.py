@@ -8,39 +8,50 @@ Overview:
 - Provides SQLAlchemy entities to persist image files with metadata, thumbnails, and EXIF data.
 - Provides Pydantic models mirroring the persisted entities for safe I/O, validation,
     and serialization.
+- Extends base file system models from core.models.file_system.base for consistent
+    path/stat handling and file metadata representation.
 
 Contents:
-- Pydantic models:
-    - ImageFile:
-        A domain model representing an image file. Includes base64 encoded data for both
-        the full image and thumbnail, EXIF metadata, format information, and NSFW flag.
-        Provides helper methods for populating from file path, generating HTML/Markdown
-        image tags, updating EXIF data, and toggling NSFW status.
-
 - SQLAlchemy entities:
     - ImageFileEntity:
-        Persists an image file with path/stat metadata, SHA256 hash, base64 encoded image
-        data, thumbnail data, and EXIF metadata. Several columns are computed from JSON
-        fields (e.g., filename, extension, size, filesystem timestamps). Includes a .model
+        Persists an image file with path/stat metadata (as JSON), SHA256 hash, base64 encoded
+        image data, thumbnail data, and EXIF metadata. Several columns are computed from JSON
+        fields (e.g., filename, extension, size_bytes, modified_at_fs). Includes a .model
         property to convert to the ImageFile Pydantic model and convenience properties for
-        accessing stat/path models.
+        accessing stat/path models (.stat_model, .path_model, .Path). Provides .summary for
+        quick metadata access and .freeze()/.unfreeze() methods for immutability toggling.
+
+- Pydantic models:
+    - ImageFile:
+        A domain model extending BaseFileModel representing an image file. Includes base64
+        encoded data for both the full image (b64_data) and thumbnail (thumbnail_b64_data),
+        EXIF metadata (exif_data), format information (fmt), and NSFW flag (is_nsfw).
+        The populate() method handles reading image files, extracting EXIF data, generating
+        thumbnails, and encoding to base64. Provides helper properties for generating
+        HTML/Markdown image tags (html_thumbnail_tag, md_thumbnail_tag, html_img_tag,
+        md_img_tag) and an .entity property for SQLAlchemy conversion.
 
 - Scan Result models:
-    - ImageScanResultModel:
-        Represents the result of scanning a directory in mode="image". Carries the list of
-        discovered image files. Includes validators for type consistency and serialization
-        helpers.
+    - ImageScanResult:
+        Extends BaseScanResult representing the result of scanning a directory in mode="image".
+        Carries the list of discovered ImageFile objects (files). Includes validators for
+        type consistency and serialization helpers.
 
 Design notes:
+- All models use Pydantic v2 conventions with field_validator, field_serializer,
+    and model_serializer decorators.
 - .model properties on SQLAlchemy entities provide an immediate conversion to Pydantic
     models for safe I/O layers.
 - The ImageFile.populate() method handles reading image files, extracting EXIF data,
-    generating thumbnails, and encoding to base64.
-- Computed columns reduce duplication and ensure consistent derivation of metadata from
-    JSON fields without requiring application-side recomputation.
+    generating thumbnails (default 512x512), and encoding to base64.
+- Computed columns in ImageFileEntity reduce duplication and ensure consistent derivation
+    of metadata from JSON fields without requiring application-side recomputation.
 - Thumbnail generation maintains aspect ratio and handles transparency for images with
-    alpha channels.
-- EXIF data extraction handles various byte encodings (UTF-8, unicode_escape, latin-1).
+    alpha channels (RGBA, LA, or P mode with transparency).
+- EXIF data extraction handles various byte encodings (UTF-8, unicode_escape, latin-1)
+    with graceful fallback.
+- Tag validation (inherited from BaseFileModel) ensures lowercase, dash-separated,
+    hash-prefixed format for consistency.
 """
 # endregion
 # region Imports
@@ -162,6 +173,28 @@ class ImageFileEntity(Base):
                 "is_nsfw": self.is_nsfw,
             }
         )
+
+    @property
+    def dict(self) -> dict[str, Any]:
+        """Return a dictionary representation of the ImageFileEntity."""
+        return {
+            "id": self.id,
+            "sha256": self.sha256,
+            "path_json": self.path_json,
+            "stat_json": self.stat_json,
+            "mime_type": self.mime_type,
+            "tags": self.tags,
+            "short_description": self.short_description,
+            "long_description": self.long_description,
+            "frozen": self.frozen,
+            "fmt": self.fmt,
+            "b64_data": self.b64_data,
+            "thumbnail_b64_data": self.thumbnail_b64_data,
+            "exif_data": self.exif_data,
+            "is_nsfw": self.is_nsfw,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
 
     @property
     def stat_model(self) -> BaseFileStat:
@@ -309,7 +342,8 @@ class ImageFile(BaseFileModel):
         except Exception as e:
             print(f"Error extracting EXIF data from image file {file_path}: {e}")
 
-    def thumbnail_html_tag(self) -> Optional[str]:
+    @property
+    def html_thumbnail_tag(self) -> Optional[str]:
         """
         Generate an HTML img tag for the thumbnail image.
 
@@ -320,7 +354,8 @@ class ImageFile(BaseFileModel):
             return f'<img src="data:image/{self.fmt};base64,{self.thumbnail_b64_data}" alt="Thumbnail"/>'
         return None
 
-    def thumbnail_markdown_tag(self) -> Optional[str]:
+    @property
+    def md_thumbnail_tag(self) -> Optional[str]:
         """
         Generate a Markdown image tag for the thumbnail image.
 
@@ -333,7 +368,8 @@ class ImageFile(BaseFileModel):
             )
         return None
 
-    def image_html_tag(self) -> Optional[str]:
+    @property
+    def html_img_tag(self) -> Optional[str]:
         """
         Generate an HTML img tag for the full image.
 
@@ -346,7 +382,8 @@ class ImageFile(BaseFileModel):
             )
         return None
 
-    def image_markdown_tag(self) -> Optional[str]:
+    @property
+    def md_img_tag(self) -> Optional[str]:
         """
         Generate a Markdown image tag for the full image.
 
@@ -357,28 +394,28 @@ class ImageFile(BaseFileModel):
             return f"![Image](data:image/{self.fmt};base64,{self.b64_data})"
         return None
 
-    def update_exif_data(self, new_exif_data: dict[str, Any]) -> None:
-        """
-        Update the EXIF data of the image file model.
-
-        Args:
-            new_exif_data (dict[str, Any]): A dictionary containing new EXIF data to update.
-
-        Returns:
-            None
-        """
-        self.exif_data.update(new_exif_data)
-
-    def toggle_nsfw(self) -> None:
-        """
-        Toggle the is_nsfw flag of the image file model.
-
-        Returns:
-            None
-        """
-        self.is_nsfw = not self.is_nsfw
+    @property
+    def entity(self) -> ImageFileEntity:
+        return ImageFileEntity(
+            id=self.id,
+            sha256=self.sha256,
+            path_json=self.path_json,
+            stat_json=self.stat_json,
+            mime_type=self.mime_type,
+            tags=self.tags,
+            short_description=self.short_description,
+            long_description=self.long_description,
+            frozen=self.frozen,
+            fmt=self.fmt,
+            b64_data=self.b64_data if self.b64_data is not None else "",
+            thumbnail_b64_data=self.thumbnail_b64_data,
+            exif_data=self.exif_data,
+            is_nsfw=self.is_nsfw if self.is_nsfw is not None else False,
+        )
 
 
+# endregion
+# region Scan Result Model
 class ImageScanResult(BaseScanResult):
     """
     Model representing the result of an image scan.

@@ -71,6 +71,12 @@ from pathlib import Path
 from typing import Literal, Optional, Union
 
 from core import settings
+from core.utils import (
+    get_file_sha256,
+    get_file_stat_model,
+    get_mime_type,
+    get_path_model,
+)
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -591,6 +597,37 @@ class BaseFileModel(BaseModel):
         return v
 
     @property
+    def stat_model(self) -> BaseFileStat:
+        """Return the FileStat model representation of the file's stat_json."""
+        return BaseFileStat.model_validate(self.stat_json)
+
+    @property
+    def path_model(self) -> FilePath:
+        """Return the FilePath model representation of the file's path_json."""
+        return FilePath.model_validate(self.path_json)
+
+    @property
+    def summary(self) -> dict[str, str]:
+        """Return a summary dictionary of the DataFileEntity."""
+        return {
+            "file_id": self.id,
+            "path": self.path_model.Path.as_posix(),
+            "sha256": self.sha256,
+            "mimetype": self.mime_type or "unknown",
+            "short_description": self.short_description or "",
+            "long_description": self.long_description or "",
+            "tags": ", ".join(self.tags) if self.tags else "",
+        }
+
+    def freeze(self) -> None:
+        """Mark the file as frozen (immutable)."""
+        self.frozen = True
+
+    def unfreeze(self) -> None:
+        """Mark the file as unfrozen (mutable)."""
+        self.frozen = False
+
+    @property
     def Path(self) -> Path:
         return self.path_json.Path
 
@@ -600,7 +637,7 @@ class BaseFileModel(BaseModel):
 
     @property
     def id(self) -> Optional[str]:
-        return sha256(f"{self.path_json.Path}{self.sha256}".encode()).hexdigest()
+        return sha256(f"{self.Path}{self.sha256}".encode()).hexdigest()
 
     def is_empty(self) -> bool:
         return self.stat_json.st_size == 0
@@ -615,12 +652,6 @@ class BaseFileModel(BaseModel):
         Returns:
             None
         """
-        from core.utils import (
-            get_file_sha256,
-            get_file_stat_model,
-            get_mime_type,
-            get_path_model,
-        )
 
         self.sha256 = get_file_sha256(file_path)
         self.stat_json = get_file_stat_model(file_path)

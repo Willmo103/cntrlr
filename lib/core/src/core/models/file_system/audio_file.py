@@ -37,7 +37,7 @@ from typing import Any, Literal, Optional
 
 from core.database import Base
 from core.models.file_system.base import BaseFileModel, BaseFileStat, FilePath
-from pydantic import ConfigDict, model_serializer
+from pydantic import model_serializer
 from sqlalchemy import Computed, DateTime, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -114,6 +114,24 @@ class AudioFileEntity(Base):
                 "transcript": self.transcript,
             }
         )
+
+    @property
+    def dict(self) -> dict[str, Optional[str]]:
+        return {
+            "id": self.id,
+            "sha256": self.sha256,
+            "path_json": self.path_json,
+            "stat_json": self.stat_json,
+            "mime_type": self.mime_type,
+            "tags": self.tags,
+            "short_description": self.short_description,
+            "long_description": self.long_description,
+            "frozen": self.frozen,
+            "duration": self.duration,
+            "transcript": self.transcript,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
 
     @property
     def stat_model(self) -> BaseFileStat:
@@ -194,10 +212,21 @@ class AudioFile(BaseFileModel):
             "transcript": self.transcript,
         }
 
-    model_config = ConfigDict(
-        **BaseFileModel.model_config,
-        arbitrary_types_allowed=True,
-    )
+    @property
+    def entity(self) -> AudioFileEntity:
+        return AudioFileEntity(
+            id=self.id if self.id is not None else None,
+            sha256=self.sha256,
+            path_json=self.path_json.model_dump(),
+            stat_json=self.stat_json.model_dump(),
+            mime_type=self.mime_type,
+            tags=self.tags,
+            short_description=self.short_description,
+            long_description=self.long_description,
+            frozen=self.frozen,
+            duration=self.duration,
+            transcript=self.transcript,
+        )
 
 
 # endregion
