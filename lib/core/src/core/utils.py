@@ -1,3 +1,47 @@
+# region Docstring
+"""
+Core utility functions for the cntrlr library.
+This module provides a collection of utility functions organized into three main categories:
+General Utilities
+-----------------
+Functions for common tasks like file type detection and format conversion:
+- is_markdown_formattable: Check if a path has a markdown file extension
+- is_image_file: Check if a path is an image file based on extension
+- is_video_file: Check if a path is a video file based on extension
+- get_markdown_format: Get the markdown format for a given file suffix
+- is_data_file: Check if a path is a data file based on extension
+- get_sqlite_schema: Retrieve SQLite database schema as a string
+- get_sqlite_tables: Retrieve list of table names from a SQLite database
+File Utilities
+--------------
+Functions for file operations and model creation:
+- get_file_sha256: Calculate the SHA256 hash of a file
+- get_file_stat_model: Get OS-appropriate file stat model
+- get_path_model: Get the PathModel for a given file path
+- get_mime_type: Get the MIME type of a file based on extension
+- BaseFileModel_from_Path: Create a BaseFileModel from a file path
+- ImageFileModel_from_Path: Create an ImageFileModel from an image file path
+- VideoFileModel_from_Path: Create a VideoFileModel from a video file path
+- SqliteFileModel_from_Path: Create a SQLiteFileModel from a database file path
+- AudioFileModel_from_Path: Create an AudioFileModel from an audio file path (not yet implemented)
+Git Utilities
+-------------
+Functions for git repository operations:
+- get_git_metadata: Extract comprehensive git metadata from a repository
+- get_latest_commit: Get the latest commit information
+- get_all_commits: Get a list of commits from the repository
+- get_repo_name: Get the repository name
+- clone_repository: Clone a git repository to a specified path
+Dependencies
+------------
+- pathlib.Path: For file path operations
+- git: For git repository operations
+- core.constants: For file format lists and extensions
+- core.base: For file stat and path models
+- core.models: For file and git metadata models
+"""
+# endregion
+# region Imports
 import stat
 import sys
 from pathlib import Path
@@ -13,6 +57,9 @@ from core.constants import (
     VIDEO_FORMAT_LIST,
 )
 
+# endregion
+# region General Utilities
+# General utility functions for various tasks.
 
 def is_markdown_formattable(path: Path) -> bool:
     """Check if the given path has a markdown file extension.
@@ -173,7 +220,7 @@ def get_sqlite_tables(path: Path) -> list[str]:
     except Exception as e:
         raise ValueError(f"Error retrieving tables: {str(e)}") from e
 
-
+# endregion
 # region File Utilities
 # Utility functions for file operations.
 
@@ -475,6 +522,9 @@ def AudioFileModel_from_Path(file_path: Path) -> AudioFile:  # type: ignore  # n
     """
     raise NotImplementedError("This function is not yet implemented.")
 
+# endregion
+# region Git Utilities
+# Utility functions for git repository operations.
 
 def get_git_metadata(repo_path: Path) -> Optional[GitMetadata]:  # type: ignore  # noqa: F821
     """
