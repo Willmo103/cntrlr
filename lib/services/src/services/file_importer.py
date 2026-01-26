@@ -54,8 +54,37 @@ class FileImporterService:
         so if an image with the same `id` already exists in the system, we can simply
         ignore it. for checking we should only be looking for the id to match.
         """
-        self.__logger.info(f"Importing {len(images)} images...")
-        ...
+        self.__logger.info("Importing %s images...", str(len(images)))
+        try:
+            with self.__db_session.get_session as session:
+                for image in images:
+                    # Check if image already exists by ID
+                    existing_image = session.get(ImageFileEntity, image.id)
+                    if existing_image:
+                        self.__logger.info(
+                            "Image with ID %s already exists. Skipping import.",
+                            image.id,
+                        )
+                        yield {
+                            "status": "Conflict",
+                            "message": f"Image with ID {image.id} already exists.",
+                        }
+                        continue
+
+                    # Create new ImageFileEntity from ImageFile model
+                    image_entity = image.entity
+
+                    # Add to session and commit
+                    session.add(image_entity)
+                    session.commit()
+                    self.__logger.info(f"Imported image with ID %s.", image_entity.id)
+                    yield {
+                        "status": "Created",
+                        "message": f"Imported image with ID {image_entity.id}.",
+                    }
+        except Exception as e:
+            self.__logger.exception("Failed to import images. %s", str(e), exc_info=e)
+            raise FileImporterError(f"Failed to import images: {str(e)}") from e
 
     def import_videos(
         self, videos: list[VideoFile]
