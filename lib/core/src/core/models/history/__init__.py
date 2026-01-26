@@ -1,3 +1,4 @@
+# region Docstring
 """
 core.models.history
 Package initialization for history-related persistence and domain models.
@@ -22,12 +23,14 @@ Design Notes:
 - Exports are organized into __entities__ and __models__ lists for clear separation
     of concerns.
 core.models.history package initialization.
-
 """
-
+# endregion
+# region Imports
 from .clipboard_history import ClipboardHistory, ClipboardHistoryEntity  # noqa: F401
 
-
+# endregion
+# region Exports
 __entities__ = ["ClipboardHistoryEntity"]
 __models__ = ["ClipboardHistory"]
 __all__ = [*__entities__, *__models__]
+# endregion

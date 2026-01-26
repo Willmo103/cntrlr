@@ -23,8 +23,10 @@ Design notes:
 # endregion
 # region Imports
 from datetime import datetime
+from typing import Optional
 
 from core.database import Base
+from pydantic import BaseModel, Field
 from sqlalchemy import DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -77,7 +79,63 @@ class LogEntryEntity(Base):
     def __hash__(self) -> int:
         return hash((self.timestamp, self.level, self.service, self.message))
 
+    @property
+    def model(self) -> "LogEntry":
+        from core.models import LogEntry
+
+        return LogEntry(
+            id=self.id,
+            timestamp=self.timestamp,
+            level=self.level,
+            service=self.service,
+            message=self.message,
+        )
+
+    @property
+    def dict(self) -> dict:
+        return {
+            "id": self.id,
+            "timestamp": self.timestamp,
+            "level": self.level,
+            "service": self.service,
+            "message": self.message,
+        }
+
 
 # endregion
+# region Pydantic Model
+class LogEntry(BaseModel):
+    """
+    Pydantic model representing a system log entry.
+
+    Attributes:
+        id (Optional[int]): Primary key.
+        timestamp (Optional[datetime]): Timestamp of the log entry.
+        level (str): Log level (e.g., INFO, ERROR, WARNING).
+        service (str): Service that generated the log (e.g., 'controller', 'converter').
+        message (str): Log message.
+    """
+
+    id: Optional[int] = Field(None, description="Primary key of the log entry")
+    timestamp: Optional[datetime] = Field(
+        None, description="Timestamp of the log entry"
+    )
+    level: str = Field(..., description="Log level (e.g., INFO, ERROR, WARNING)")
+    service: str = Field(
+        ...,
+        description="Service that generated the log (e.g., 'controller', 'converter')",
+    )
+    message: str = Field(..., description="Log message")
+
+    @property
+    def entity(self) -> LogEntryEntity:
+        return LogEntryEntity(
+            id=self.id if self.id is not None else None,
+            timestamp=self.timestamp if self.timestamp is not None else func.now(),
+            level=self.level,
+            service=self.service,
+            message=self.message,
+        )
+
 
 __all__ = ["LogEntryEntity"]

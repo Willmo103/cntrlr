@@ -114,6 +114,17 @@ class NoteEntity(Base):
             }
         )
 
+    @property
+    def dict(self) -> dict[str, Optional[str]]:
+        return {
+            "id": self.id,
+            "title": self.title,
+            "content": self.content,
+            "tags": self.tags,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
 
 # endregion
 
@@ -165,6 +176,15 @@ class Note(BaseModel):
     def serialize_updated_at(self, v: Optional[datetime]) -> Optional[str]:
         """Serialize updated_at to ISO format string."""
         return v.isoformat() if v else None
+
+    @property
+    def entity(self) -> NoteEntity:
+        return NoteEntity(
+            id=self.id if self.id is not None else None,
+            title=self.title,
+            content=self.content,
+            tags=self.tags,
+        )
 
 
 # endregion

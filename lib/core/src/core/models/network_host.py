@@ -103,6 +103,19 @@ class NetworkHostEntity(Base):
             }
         )
 
+    @property
+    def dict(self) -> dict[str, Optional[str]]:
+        return {
+            "id": self.id,
+            "hostname": self.hostname,
+            "ip_address": self.ip_address,
+            "mac_address": self.mac_address,
+            "device_type": self.device_type,
+            "notes": self.notes,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
 
 # endregion
 
@@ -172,6 +185,17 @@ class NetworkHost(BaseModel):
         return v
 
     model_config = ConfigDict(from_attributes=True)
+
+    @property
+    def entity(self) -> NetworkHostEntity:
+        return NetworkHostEntity(
+            id=self.id if self.id is not None else None,
+            hostname=self.hostname,
+            ip_address=self.ip_address,
+            mac_address=self.mac_address,
+            device_type=self.device_type,
+            notes=self.notes,
+        )
 
 
 # endregion

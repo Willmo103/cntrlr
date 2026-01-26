@@ -1,5 +1,5 @@
-"""
 # region Docstring
+"""
 core.models.history.clipboard_history
 Persistence and domain models for managing clipboard history entries.
 Overview:
@@ -30,7 +30,7 @@ Design notes:
 - Timestamps (timestamp, created_at, updated_at) enable chronological ordering and
     audit trails.
 """
-
+# endregion
 # region Imports
 from datetime import datetime
 from typing import Optional

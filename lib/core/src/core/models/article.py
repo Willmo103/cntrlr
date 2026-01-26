@@ -30,7 +30,6 @@ Design notes:
     when processing articles from the same source.
 - Optional fields allow for incremental population as articles progress through
     processing stages (fetch → convert → clean → summarize).
-
 """
 
 # endregion
@@ -73,9 +72,6 @@ class ArticleEntity(Base):
     tags: Mapped[Optional[list[str]]] = mapped_column(String, nullable=True)
     added_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
-    )
-    updated_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
     # DB Record Timestamps

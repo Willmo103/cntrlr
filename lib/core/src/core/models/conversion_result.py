@@ -35,8 +35,10 @@ Design notes:
 # endregion
 # region Imports
 from datetime import datetime
+from typing import Optional
 
 from core.database import Base
+from pydantic import BaseModel, Field
 from sqlalchemy import DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -54,6 +56,7 @@ class ConversionResultEntity(Base):
         text (Optional[str]): Converted content in plain text format.
         s3_json_key (str): S3 key where the JSON representation is stored.
         created_at (datetime): Timestamp when the record was created.
+        updated_at (datetime): Timestamp when the record was last updated.
     """
 
     __tablename__ = "conversion_results"
@@ -64,6 +67,9 @@ class ConversionResultEntity(Base):
     s3_json_key: Mapped[str] = mapped_column(String(500), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
     def __repr__(self) -> str:
@@ -83,7 +89,54 @@ class ConversionResultEntity(Base):
     def __hash__(self) -> int:
         return hash((self.uuid, self.s3_json_key))
 
+    @property
+    def model(self) -> "ConversionResult":
+        return ConversionResult(
+            id=self.id,
+            uuid=self.uuid,
+            markdown=self.markdown,
+            text=self.text,
+            s3_json_key=self.s3_json_key,
+        )
+
+    @property
+    def dict(self) -> dict[str, Optional[str]]:
+        return {
+            "id": self.id,
+            "uuid": self.uuid,
+            "markdown": self.markdown,
+            "text": self.text,
+            "s3_json_key": self.s3_json_key,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
 
 # endregion
+# region Pydantic Model
+class ConversionResult(BaseModel):
+    id: Optional[int] = Field(None, description="Primary key of the conversion result")
+    uuid: str = Field(..., description="Unique identifier for the conversion result")
+    markdown: Optional[str] = Field(
+        None, description="Converted content in Markdown format"
+    )
+    text: Optional[str] = Field(
+        None, description="Converted content in plain text format"
+    )
+    s3_json_key: str = Field(
+        ..., description="S3 key where the JSON representation is stored"
+    )
 
+    @property
+    def entity(self) -> ConversionResultEntity:
+        return ConversionResultEntity(
+            id=self.id if self.id is not None else None,
+            uuid=self.uuid,
+            markdown=self.markdown,
+            text=self.text,
+            s3_json_key=self.s3_json_key,
+        )
+
+
+# endregion
 __all__ = ["ConversionResultEntity"]

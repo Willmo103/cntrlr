@@ -2,73 +2,93 @@
 """
 core.models.obsidian
 Persistence and domain models for indexing and working with Obsidian vaults and notes.
+
 Overview:
 - Provides SQLAlchemy entities to persist Obsidian vaults, notes, and extracted non-empty
-    note lines.
+    note lines in a PostgreSQL database.
 - Provides Pydantic models mirroring the persisted entities for safe I/O, validation,
-    and serialization.
+    and serialization, extending base models from core.models.file_system.base.
 - Includes database trigger DDL to keep an extracted "lines" table synchronized from
     a note's lines_json payload.
+
 Contents:
 - Constants:
     - OBSIDIAN_PARENT_FOLDER_MARKER: Marker directory name (".obsidian") used to identify
         Obsidian vault roots.
-- SQLAlchemy entities:
+
+- SQLAlchemy Entities:
     - ObsidianNoteLineEntity:
-        Stores a single non-empty line from a note. Computed content_hash (SHA-256) aids
-        deduplication and indexing. Includes helpers for equality, hashing, and conversion
-        to a TextFileLine Pydantic model.
+        Stores a single non-empty line from a note in the `obsidian_file_lines` table.
+        Links to parent note via `note_id` foreign key. Includes content_hash (MD5) for
+        deduplication and indexing. Provides .model property to convert to TextFileLine
+        Pydantic model and .dict property for dictionary representation.
+
     - ObsidianNoteEntity:
-        Persists a single Obsidian note with path/stat metadata, content, tags, links,
-        Obsidian properties, and JSON lines. Several columns are computed from JSON fields
-        (e.g., filename, extension, size, filesystem timestamps). Includes a .model property
-        to convert to the ObsidianNote Pydantic model.
+        Persists a single Obsidian note in the `obsidian_notes` table with:
+            - Computed columns derived from JSON fields (filename, extension, size_bytes,
+              created_at_fs, modified_at_fs) using PostgreSQL Computed expressions.
+            - Full content and lines_json for text storage.
+            - Obsidian-specific fields: vault_path, obsidian_tags, links, properties.
+            - Standard metadata: sha256, path_json, stat_json, mime_type, tags, descriptions.
+        Includes .model property to convert to ObsidianNote Pydantic model.
+
     - ObsidianVaultEntity:
-        Persists a vault directory and its associated notes and metadata. Includes a .model
-        property to convert to the ObsidianVault Pydantic model and a .notes convenience
-        accessor.
+        Persists a vault directory in the `vaults` table with path/stat metadata, tags,
+        descriptions, and associated notes (vault_notes). Includes .model property to
+        convert to ObsidianVault Pydantic model and .notes convenience accessor.
+
 - Trigger DDL:
-    - process_obsidian_file_lines() and trigger_shred_lines:
+    - process_obsidian_file_lines() function and trigger_shred_lines trigger:
         A PostgreSQL trigger function and trigger that:
             1) Deletes existing line rows for a note when its lines_json is inserted/updated.
-            2) Re-inserts non-empty lines from lines_json into the lines table with line_number,
-                 content, and content_hash.
+            2) Re-inserts non-empty lines from lines_json into the obsidian_file_lines table
+               with line_number, content, and content_hash (MD5).
         Expected lines_json shape:
-                "lines": [
-                    {"content": "string", "line_number": 1},
-                    ...
-                ]
-        Implementation note: Ensure table/column names referenced by the trigger match the
-        entity definitions (e.g., note_id/file_id, obsidian_notes/obsidian_files).
-- Pydantic models:
-    - ObsidianNote:
-        A domain model representing a single Obsidian note. Includes vault-relative path,
-        Obsidian tags, links, properties (frontmatter), optional content/lines, and common
-        file metadata (path/stat/tags/descriptions). Added/updated timestamps are parsed
-        from ISO strings and serialized back to ISO strings.
+            { "lines": [ {"content": "string", "line_number": 1}, ... ] }
+
+- Pydantic Models:
+    - ObsidianNote (extends BaseFileModel):
+        Domain model representing a single Obsidian note. Includes:
+            - vault_path: Path relative to vault root.
+            - obsidian_tags: List of Obsidian-specific tags (e.g., #tag).
+            - links: List of wikilinks to other notes.
+            - properties: Frontmatter key-value pairs.
+            - added_at/updated_at: Timestamps with ISO 8601 serialization/validation.
+        Provides .entity property for conversion to ObsidianNoteEntity.
+
     - ObsidianNoteLine:
-        Represents a single line in a note with helpers:
-            - is_empty: True if whitespace only.
-            - line_length: Content length.
-        Provides a JSON-oriented serializer for consistent API output.
-    - ObsidianVault:
-        Represents a vault directory with an index_json payload (e.g., .obsidian/index.json),
-        a list of ObsidianNote items, and added/updated timestamps. Validators accept dicts
-        or JSON strings and coerce into structured data. Serialization returns JSON-safe
-        values and ISO timestamps.
-    - ObsidianScanResult:
-        Represents the result of scanning a vault in mode="obsidian". Carries optional
-        vault_index_json and the list of discovered notes (vault_notes). Includes validators
-        for type/mode consistency and serialization helpers.
-Design notes:
-- .model properties on SQLAlchemy entities provide an immediate conversion to Pydantic
-    models for safe I/O layers.
+        Represents a single line in a note with:
+            - is_empty property: True if content is whitespace only.
+            - line_length property: Length of content string.
+        Provides JSON serializer and .entity property for ObsidianNoteLineEntity conversion.
+
+    - ObsidianVault (extends BaseDirectory):
+        Represents a vault directory with:
+            - notes: List of ObsidianNote models.
+            - index_json: Parsed vault index data (accepts dict or JSON string).
+            - added_at/updated_at: Timestamps with ISO 8601 handling.
+        Validators coerce dicts/JSON strings into structured data. Provides .entity property
+        for conversion to ObsidianVaultEntity.
+
+    - ObsidianScanResult (extends BaseScanResult):
+        Represents the result of scanning a vault with mode="obsidian". Contains:
+            - vault_index_json: Optional vault index data.
+            - vault_notes: List of discovered ObsidianNote models.
+        Includes .notes and .index convenience properties.
+
+Design Notes:
+- .model properties on SQLAlchemy entities provide immediate conversion to Pydantic
+    models for safe API/I/O layers.
+- .entity properties on Pydantic models provide conversion back to SQLAlchemy entities
+    for database persistence.
 - Pydantic validators and serializers normalize timestamps (ISO 8601) and flexible input
     shapes (dicts vs. JSON strings).
 - Computed columns reduce duplication and ensure consistent derivation of metadata from
     JSON fields without requiring application-side recomputation.
 - The trigger-based line extraction ensures note content changes reflected in lines_json
-    are indexed into a relational structure suitable for fast search.
+    are indexed into a relational structure suitable for fast full-text search.
+- All models use Pydantic v2 conventions with field_validator, field_serializer,
+    and model_serializer decorators for consistent behavior.
 """
 # endregion
 # region Imports
@@ -107,14 +127,12 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 # endregion
-
 # region Constants
 OBSIDIAN_PARENT_FOLDER_MARKER = ".obsidian"
 """CONST str: Marker folder name for Obsidian vaults."""
 
+
 # endregion
-
-
 # region SQLAlchemy Models
 class ObsidianNoteLineEntity(Base):
     """
@@ -166,6 +184,16 @@ class ObsidianNoteLineEntity(Base):
             content=self.content,
             content_hash=self.content_hash,
         )
+
+    @property
+    def dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "note_id": self.note_id,
+            "line_number": self.line_number,
+            "content": self.content,
+            "content_hash": self.content_hash,
+        }
 
 
 class ObsidianNoteEntity(Base):
@@ -287,6 +315,28 @@ class ObsidianNoteEntity(Base):
             }
         )
 
+    @property
+    def dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "vault_id": self.vault_id,
+            "path_json": self.path_json,
+            "stat_json": self.stat_json,
+            "mime_type": self.mime_type,
+            "tags": self.tags,
+            "short_description": self.short_description,
+            "long_description": self.long_description,
+            "frozen": self.frozen,
+            "content": self.content,
+            "lines_json": self.lines_json,
+            "vault_path": self.vault_path,
+            "obsidian_tags": self.obsidian_tags,
+            "links": self.links,
+            "properties": self.properties,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
 
 # --- TRIGGER LOGIC FOR FileLinesModel ---
 # Expects JSON: { "lines": [ {"content": "...", "line_number": 1}, ... ] }
@@ -405,6 +455,23 @@ class ObsidianVaultEntity(Base):
             updated_at=self.updated_at,
         )
 
+    @property
+    def dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "path_json": self.path_json,
+            "stat_json": self.stat_json,
+            "tags": self.tags,
+            "short_description": self.short_description,
+            "long_description": self.long_description,
+            "frozen": self.frozen,
+            "vault_notes": (
+                [note.dict for note in self.vault_notes] if self.vault_notes else None
+            ),
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
 
 # endregion
 
@@ -480,6 +547,16 @@ class ObsidianNote(BaseFileModel):
             return datetime.fromisoformat(v)
         return v
 
+    @property
+    def entity(self) -> ObsidianNoteEntity:
+        return ObsidianNoteEntity(
+            id=self.id if self.id is not None else None,
+            vault_path=self.vault_path,
+            obsidian_tags=self.obsidian_tags,
+            links=self.links,
+            properties=self.properties,
+        )
+
 
 class ObsidianNoteLine(BaseModel):
     """
@@ -514,6 +591,15 @@ class ObsidianNoteLine(BaseModel):
             "content": self.content,
             "line_number": self.line_number,
         }
+
+    @property
+    def entity(self) -> ObsidianNoteLineEntity:
+        return ObsidianNoteLineEntity(
+            note_id=self.note_id,
+            line_number=self.line_number if self.line_number is not None else 0,
+            content=self.content,
+            content_hash="",  # Content hash can be computed as needed
+        )
 
 
 class ObsidianVault(BaseDirectory):
@@ -602,7 +688,22 @@ class ObsidianVault(BaseDirectory):
             "updated_at": self.serialize_updated_at(self.updated_at),
         }
 
+    @property
+    def entity(self) -> ObsidianVaultEntity:
+        return ObsidianVaultEntity(
+            id=self.id if self.id is not None else None,
+            path_json=self.path.dict(),
+            stat_json=self.stat.dict(),
+            tags=self.tags,
+            short_description=self.short_description,
+            long_description=self.long_description,
+            frozen=self.frozen,
+            vault_notes=[note.entity for note in self.notes],
+        )
 
+
+# endregion
+# region Scan Result Model
 class ObsidianScanResult(BaseScanResult):
     """
     A Pydantic model to represent the result of an Obsidian vault scan.
