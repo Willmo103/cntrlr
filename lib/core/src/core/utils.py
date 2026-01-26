@@ -42,10 +42,9 @@ Dependencies
 """
 # endregion
 # region Imports
-import stat
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import git
 
@@ -269,7 +268,7 @@ def get_file_sha256(file_path: Path) -> str:
         raise RuntimeError(f"Error calculating SHA256 for file {file_path}: {e}") from e
 
 
-def get_file_stat_model(file_path: Path) -> "BaseFileStat":  # type: ignore # noqa: F821
+def get_file_stat_model(file_path: Path) -> Union["BaseFileStat", "LinuxFileStat", "MacOSFileStat", "WindowsFileStat"]:  # type: ignore  # noqa: F821
     """
     Get the appropriate file stat model based on the operating system.
 

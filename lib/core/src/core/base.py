@@ -336,26 +336,6 @@ class BaseFileStat(BaseModel):
     st_blksize: Optional[int] = None
     st_rdev: Optional[int] = None
 
-    @model_serializer()
-    def convert_to_iso_datetimes(self) -> dict:
-        """
-        Convert timestamp fields to ISO 8601 datetime strings during serialization.
-        """
-        data = self.model_dump()
-        for field in [
-            "st_atime",
-            "st_mtime",
-            "st_ctime",
-            "st_atime_ns",
-            "st_mtime_ns",
-            "st_ctime_ns",
-        ]:
-            if data.get(field) is not None:
-                data[field] = datetime.fromtimestamp(
-                    data[field], datetime.now()
-                ).isoformat()
-        return data
-
     model_config = ConfigDict(
         arbitrary_types_allowed=True, ignore_extra=True, check_fields=False
     )
@@ -572,7 +552,12 @@ class BaseFileModel(BaseModel):
         try:
             if isinstance(v, FilePath):
                 return v
-            return FilePath.model_validate(v)
+            else:
+                try:
+                    return FilePath.model_validate(v, from_attributes=True)
+                except Exception:
+                    pass
+            return FilePath.model_validate(v, from_attributes=True)
         except Exception as e:
             raise ValueError(f"Invalid path_json data: {e}")
 
@@ -588,8 +573,10 @@ class BaseFileModel(BaseModel):
                 return v
             elif isinstance(v, LinuxFileStat):
                 return v
+            elif isinstance(v, WindowsFileStat):
+                return v
             else:
-                return BaseFileStat.model_validate(v)
+                return BaseFileStat.model_validate(v, from_attributes=True)
         except Exception as e:
             raise ValueError(f"Invalid stat_json data: {e}")
 
@@ -652,17 +639,16 @@ class BaseFileModel(BaseModel):
         """
         if not file_path.exists() or not file_path.is_file():
             raise FileNotFoundError(f"File not found: {file_path}")
-
-        cls.sha256 = get_file_sha256(file_path)
-        cls.stat_json = get_file_stat_model(file_path)
-        cls.path_json = get_path_model(file_path)
-        cls.mime_type = get_mime_type(file_path)
-        cls.tags = []
-        cls.short_description = None
-        cls.long_description = None
-        cls.frozen = False
-
-        return cls
+        return cls(
+            sha256=get_file_sha256(file_path),
+            stat_json=get_file_stat_model(file_path),
+            path_json=get_path_model(file_path),
+            mime_type=get_mime_type(file_path),
+            tags=[],
+            short_description=None,
+            long_description=None,
+            frozen=False,
+        )
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True, check_fields=False, from_attributes=True
