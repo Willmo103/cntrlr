@@ -32,7 +32,6 @@ Design Notes:
 """
 # endregion
 # region Imports
-from logging import Logger
 from core.database import DatabaseSessionGenerator
 from core.models.file_system.image_file import (
     ImageFileEntity,
@@ -56,7 +55,7 @@ class ImageImporter:
     Service for importing and processing image files.
     """
 
-    def __init__(self, db: DatabaseSessionGenerator, logger: Logger):
+    def __init__(self, db: DatabaseSessionGenerator):
         """
         Initializes the ImageImporter with a database session generator and logger.
 
@@ -65,7 +64,6 @@ class ImageImporter:
             logger (Logger): The logger instance for logging.
         """
         self.db_session_generator = db
-        self.logger = logger.getChild("ImageImporter")
 
     def process_result(self, scan_result: ImageScanResult) -> list[ImageImporterResult]:
         """
