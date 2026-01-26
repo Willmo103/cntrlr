@@ -151,7 +151,7 @@ class AudioFileEntity(Base):
         return self.path_model.Path
 
     @property
-    def summary(self) -> dict[str, str]:
+    def file_summary(self) -> dict:
         """Return a summary dictionary of the DataFileEntity."""
         return {
             "file_id": self.id,
@@ -208,7 +208,7 @@ class AudioFile(BaseFileModel):
 
         # TODO: Populate duration using audio processing libraries like pydub or librosa.
 
-    @model_serializer("json")
+    @model_serializer()
     def serialize_model(self) -> dict:
         return {
             **super().serialize_model(),

@@ -80,7 +80,7 @@ from core.database import Base
 
 # endregion
 # region Sqlalchemy Model
-class VideoFile_Table(Base):
+class VideoFileEntity(Base):
     """
     Model representing a video file in the file system.
 
@@ -144,7 +144,7 @@ class VideoFile_Table(Base):
         return f"<VideoFile(id={self.id}, sha256='{self.sha256}')>"  # noqa: E501
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, VideoFile_Table):
+        if not isinstance(other, VideoFileEntity):
             return NotImplemented
 
         return self.sha256 == other.sha256
@@ -216,7 +216,7 @@ class VideoFile_Table(Base):
         return self.path_model.Path
 
     @property
-    def summary(self) -> dict[str, str]:
+    def summary(self) -> dict:
         """Return a summary dictionary of the DataFileEntity."""
         return {
             "file_id": self.id,
@@ -349,8 +349,8 @@ class VideoFile(BaseFileModel):
         return cls
 
     @property
-    def entity(self) -> VideoFile_Table:
-        return VideoFile_Table(
+    def entity(self) -> VideoFileEntity:
+        return VideoFileEntity(
             id=self.id if self.id is not None else None,
             sha256=self.sha256,
             path_json=self.path_json.model_dump(),
@@ -433,4 +433,4 @@ class VideoScanResult(BaseScanResult):
 #     gif_b64_data: Optional[str] = Field(None, description="Base64 encoded preview GIF data for the video")
 # endregion
 
-__all__ = ["VideoFile_Table", "VideoFile", "VideoScanResult"]
+__all__ = ["VideoFileEntity", "VideoFile", "VideoScanResult"]

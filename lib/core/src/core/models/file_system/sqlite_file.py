@@ -42,7 +42,6 @@ from pydantic import ConfigDict, field_validator, model_serializer
 from sqlalchemy import Computed, DateTime, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
-from core import SQLiteFile
 from core.base import BaseFileModel, BaseFileStat, FilePath
 from core.database import Base
 
@@ -136,7 +135,7 @@ class SQLiteFileEntity(Base):
         )
 
     @property
-    def model(self) -> SQLiteFile:
+    def model(self) -> "SQLiteFile":
         """Return the Pydantic model representation of the SQLite file."""
         return SQLiteFile.model_validate(
             {
@@ -189,7 +188,7 @@ class SQLiteFileEntity(Base):
         return self.path_model.Path
 
     @property
-    def summary(self) -> dict[str, str]:
+    def summary(self) -> dict:
         """Return a summary dictionary of the DataFileEntity."""
         return {
             "file_id": self.id,
@@ -241,7 +240,7 @@ class SQLiteFile(BaseFileModel):
         cls.content = file_path.read_text(encoding="utf-8", errors="ignore")
         return cls
 
-    @model_serializer("json")
+    @model_serializer()
     def serialize_model(self) -> dict:
         return {
             **super().serialize_model(),

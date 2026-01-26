@@ -180,7 +180,7 @@ class DataFileEntity(Base):
         return self.path_model.Path
 
     @property
-    def summary(self) -> dict[str, str]:
+    def summary(self) -> dict:
         """Return a summary dictionary of the DataFileEntity."""
         return {
             "file_id": self.id if self.id else "",
@@ -220,7 +220,9 @@ class DataFile(BaseFileModel):
         content (Optional[str]): The content of the data file as a string.
     """
 
-    type: Literal["data"] = Field("data", const=True)
+    type: Literal["data"] = Field(
+        "data", description="The discriminator for data file type"
+    )
     content: Optional[str] = Field(
         None, description="The content of the data file as a string"
     )

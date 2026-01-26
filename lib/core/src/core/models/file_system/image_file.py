@@ -216,7 +216,7 @@ class ImageFileEntity(Base):
         return self.path_model.Path
 
     @property
-    def summary(self) -> dict[str, str]:
+    def summary(self) -> dict:
         """Return a summary dictionary of the DataFileEntity."""
         return {
             "file_id": self.id,

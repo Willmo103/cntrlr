@@ -285,8 +285,9 @@ def get_file_stat_model(file_path: Path) -> "BaseFileStat":  # type: ignore # no
         LinuxFileStatModel(...)
     """
     from core.base import LinuxFileStat, MacOSFileStat, WindowsFileStat, BaseFileStat
+    from os import stat as os_stat
 
-    file_stat = stat(file_path)
+    file_stat = os_stat(file_path)
 
     system = sys.platform
     if system == "Darwin":
@@ -488,7 +489,7 @@ def SqliteFileModel_from_Path(file_path: Path) -> "SQLiteFile":  # type: ignore 
         ) from e
 
 
-def AudioFileModel_from_Path(file_path: Path) -> AudioFile:  # type: ignore  # noqa: F821
+def AudioFileModel_from_Path(file_path: Path) -> "AudioFile":  # type: ignore  # noqa: F821
     """
     Create an AudioFileModel instance from a given file path.
 
@@ -518,7 +519,7 @@ def AudioFileModel_from_Path(file_path: Path) -> AudioFile:  # type: ignore  # n
 # Utility functions for git repository operations.
 
 
-def get_git_metadata(repo_path: Path) -> Optional[GitMetadata]:  # type: ignore  # noqa: F821
+def get_git_metadata(repo_path: Path) -> Optional["GitMetadata"]:  # type: ignore  # noqa: F821
     """
     Extract git metadata from repository.
 
@@ -582,7 +583,7 @@ def get_git_metadata(repo_path: Path) -> Optional[GitMetadata]:  # type: ignore 
         return None
 
 
-def get_latest_commit(repo_path: Path) -> Optional[GitCommit]:  # type: ignore  # noqa: F821
+def get_latest_commit(repo_path: Path) -> Optional["GitCommit"]:  # type: ignore  # noqa: F821
     """
     Get the latest commit information from the git repository.
 
@@ -614,7 +615,7 @@ def get_latest_commit(repo_path: Path) -> Optional[GitCommit]:  # type: ignore  
         return None
 
 
-def get_all_commits(repo_path: Path, max_count: int = 10) -> Optional[list[GitCommit]]:  # type: ignore  # noqa: F821
+def get_all_commits(repo_path: Path, max_count: int = 10) -> Optional[list["GitCommit"]]:  # type: ignore  # noqa: F821
     """Get a list of commits from the git repository."""
     from core.models.repo import GitCommit
 

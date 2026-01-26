@@ -357,8 +357,7 @@ class BaseFileStat(BaseModel):
         return data
 
     model_config = ConfigDict(
-        arbitrary_types_allowed=True,
-        ignore_extra=True,
+        arbitrary_types_allowed=True, ignore_extra=True, check_fields=False
     )
 
 
@@ -594,15 +593,6 @@ class BaseFileModel(BaseModel):
         except Exception as e:
             raise ValueError(f"Invalid stat_json data: {e}")
 
-    @field_validator("mime_type", mode="before")
-    def validate_mime_type(cls, v):
-        """
-        Validator for 'mime_type' field to ensure it is a string.
-        """
-        if not isinstance(v, str):
-            raise ValueError("mime_type must be a string.")
-        return v
-
     @property
     def stat_model(self) -> BaseFileStat:
         """Return the FileStat model representation of the file's stat_json."""
@@ -675,7 +665,7 @@ class BaseFileModel(BaseModel):
         return cls
 
     model_config = ConfigDict(
-        arbitrary_types_allowed=True,
+        arbitrary_types_allowed=True, check_fields=False, from_attributes=True
     )
 
 
@@ -915,7 +905,7 @@ class BaseScanResult(BaseModel):
         default=None, description="Timestamp when the scan ended"
     )
 
-    @field_validator("type", mode="before")
+    @field_validator("mode", mode="before")
     def validate_type(cls, v: Union[str, None]) -> Optional[str]:
         if v not in [
             "git-local",
@@ -979,3 +969,5 @@ __all__ = [
     "BaseDirectory",
     "BaseScanResult",
 ]
+
+#
