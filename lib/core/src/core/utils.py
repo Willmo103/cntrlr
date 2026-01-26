@@ -446,11 +446,11 @@ def SqliteFileModel_from_Path(file_path: Path) -> "SQLiteFile":  # type: ignore 
         >>> print(sqlite_model)
         SQLiteFileModel(...)
     """
-    from core import SQLiteFile
+    from core.models. import SQLiteFile
 
     try:
         _base = BaseFileModel_from_Path(file_path)
-        sqlite_model = SQLiteFile.model_validate(_base.model_dump())
+        sqlite_model = SQLiteFile.populate(file_path)
         sqlite_model.populate(file_path)
         return sqlite_model
     except Exception as e:
@@ -477,7 +477,21 @@ def AudioFileModel_from_Path(file_path: Path) -> AudioFile:  # type: ignore  # n
 
 
 def get_git_metadata(repo_path: Path) -> Optional[GitMetadata]:  # type: ignore  # noqa: F821
-    """Extract git metadata from repository."""
+    """
+    Extract git metadata from repository.
+
+    Arguments:
+        repo_path (Path): The path to the git repository.
+
+    Returns:
+        Optional[GitMetadata]: The git metadata if the path is a valid git repository, otherwise
+        None.
+
+    Example:
+        >>> metadata = get_git_metadata(Path("/path/to/repo"))
+        >>> print(metadata)
+        GitMetadata(...)
+    """
     from core.models.repo import GitCommit, GitMetadata
 
     if not (repo_path / ".git").exists() or not repo_path.is_dir():
@@ -527,7 +541,20 @@ def get_git_metadata(repo_path: Path) -> Optional[GitMetadata]:  # type: ignore 
 
 
 def get_latest_commit(repo_path: Path) -> Optional[GitCommit]:  # type: ignore  # noqa: F821
-    """Get the latest commit information from the git repository."""
+    """
+    Get the latest commit information from the git repository.
+
+    Arguments:
+        repo_path (Path): The path to the git repository.
+
+    Returns:
+        Optional[GitCommit]: The latest commit information if the path is a valid git repository, otherwise None.
+
+    Example:
+        >>> latest_commit = get_latest_commit(Path("/path/to/repo"))
+        >>> print(latest_commit)
+        GitCommit(...)
+    """
     from core.models.repo import GitCommit
 
     if not (repo_path / ".git").exists() or not repo_path.is_dir():
@@ -569,7 +596,20 @@ def get_all_commits(repo_path: Path, max_count: int = 10) -> Optional[list[GitCo
 
 
 def get_repo_name(repo_path: Path) -> Optional[str]:
-    """Get the repository name from the git repository."""
+    """
+    Get the repository name from the git repository.
+
+    Arguments:
+        repo_path (Path): The path to the git repository.
+
+    Returns:
+        Optional[str]: The repository name if the path is a valid git repository, otherwise None.
+
+    Example:
+        >>> repo_name = get_repo_name(Path("/path/to/repo"))
+        >>> print(repo_name)
+        'my-repo'
+    """
     if not (repo_path / ".git").exists() or not repo_path.is_dir():
         return None
     try:
