@@ -821,19 +821,26 @@ class BaseTextFile(BaseFileModel):
         Returns:
             BaseTextFile: An instance of BaseTextFile populated with file data.
         """
-        super(cls).populate(file_path)
+        instance = super().populate(file_path)
+
         with file_path.open("r", encoding="utf-8", errors="ignore") as f:
             lines = f.readlines()
-            cls.content = "".join(lines).replace("\x00", "")
-            cls.lines_json = [
+
+            content = "".join(lines).replace("\x00", "")
+
+            lines_json = [
                 TextFileLine(
-                    file_id=cls.path_json.id,
+                    file_id=instance.id,  # Access ID from the instance
                     content=line.rstrip("\n").rstrip("\r"),
                     line_number=i + 1,
                 )
                 for i, line in enumerate(lines)
             ]
-        return cls
+
+        instance.content = content
+        instance.lines_json = lines_json
+
+        return instance
 
     @model_serializer(when_used="json")
     def serialize_model(self) -> dict:

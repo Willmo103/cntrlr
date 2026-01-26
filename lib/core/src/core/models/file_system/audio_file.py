@@ -36,6 +36,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal, Optional
 
+from core.utils import is_video_file
 from pydantic import model_serializer
 from sqlalchemy import Computed, DateTime, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
@@ -200,11 +201,18 @@ class AudioFile(BaseFileModel):
 
     @classmethod
     def populate(cls, file_path: Path) -> "AudioFile":
-        super().populate(file_path)
-        cls.duration = None
-        cls.transcript = None
-        cls.video_id = None
-        return cls
+        if not file_path.exists() or not file_path.is_file():
+            raise FileNotFoundError(f"File not found: {file_path}")
+        elif not is_video_file(file_path):
+            raise ValueError(f"Not a valid audio file: {file_path}")
+        instance = super().populate(file_path)
+        duration = None
+        transcript = None
+        video_id = None
+        instance.duration = duration
+        instance.transcript_json = transcript
+        instance.video_id = video_id
+        return instance
 
         # TODO: Populate duration using audio processing libraries like pydub or librosa.
 

@@ -96,6 +96,7 @@ Design Notes:
 
 import json
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
 
 from pydantic import (
@@ -344,7 +345,8 @@ class ObsidianNoteEntity(Base):
 # Expects JSON: { "lines": [ {"content": "...", "line_number": 1}, ... ] }
 
 
-note_shred_lines_func = DDL("""
+note_shred_lines_func = DDL(
+    """
 CREATE OR REPLACE FUNCTION process_obsidian_file_lines()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -374,12 +376,15 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-""")
-note_trigger_setup = DDL("""
+"""
+)
+note_trigger_setup = DDL(
+    """
 CREATE TRIGGER trigger_shred_lines
 AFTER INSERT OR UPDATE OF lines_json ON obsidian_files
 FOR EACH ROW EXECUTE FUNCTION process_obsidian_file_lines();
-""")
+"""
+)
 event.listen(
     ObsidianNoteEntity.__table__, "after_create", note_shred_lines_func
 )  # noqa
@@ -554,6 +559,64 @@ class ObsidianNote(BaseFileModel):
             links=self.links,
             properties=self.properties,
         )
+
+    def _parse_obsidian_tags(self) -> List[str]:
+        """Parse and return Obsidian-specific tags from the content."""
+        if not self.content:
+            return []
+        tags = set()
+        for line in self.content.splitlines():
+            words = line.split()
+            for word in words:
+                if word.startswith("#") and len(word) > 1:
+                    tag = word[1:].split("/")[0]  # Handle nested tags
+                    tags.add(tag)
+        return list(tags)
+
+    def _parse_links(self) -> List[str]:
+        """Parse and return Obsidian wikilinks from the content."""
+        if not self.content:
+            return []
+        links = set()
+        import re
+
+        pattern = r"\[\[([^\]]+)\]\]"
+        matches = re.findall(pattern, self.content)
+        for match in matches:
+            link = match.split("|")[0]  # Handle display text
+            links.add(link)
+        return list(links)
+
+    def _parse_properties(self) -> Dict[str, str]:
+        """Parse and return Obsidian frontmatter properties from the content."""
+        if not self.content:
+            return {}
+        properties = {}
+        lines = self.content.splitlines()
+        if lines and lines[0].strip() == "---":
+            i = 1
+            while i < len(lines):
+                line = lines[i].strip()
+                if line == "---":
+                    break
+                if ":" in line:
+                    key, value = line.split(":", 1)
+                    properties[key.strip()] = value.strip()
+                i += 1
+        return properties
+
+    @classmethod
+    def populate(cls, file_path: Path, vault_root: Path) -> "ObsidianNote":
+        instance = super().populate(file_path)
+        # Obsidian-specific population logic can be added here if needed
+        instance.vault_path = str(file_path.relative_to(vault_root))
+        obsidian_tags = cls._parse_obsidian_tags(instance)
+        links = cls._parse_links(instance)
+        properties = cls._parse_properties(instance)
+        instance.obsidian_tags = obsidian_tags
+        instance.links = links
+        instance.properties = properties
+        return instance
 
 
 class ObsidianNoteLine(BaseModel):

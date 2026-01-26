@@ -289,16 +289,16 @@ class ImageFile(BaseFileModel):
         Returns:
             None
         """
-        super().populate(file_path)
+        instance = super().populate(file_path)
 
         try:
             img = Image.open(file_path)
-            cls.fmt = img.format.lower() if img.format else "unknown"
+            fmt = img.format.lower() if img.format else "unknown"
 
             # Encode full image to base64
             buffered = BytesIO()
             img.save(buffered, format=img.format)
-            cls.b64_data = base64.b64encode(buffered.getvalue()).decode("utf-8")
+            b64_data = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
             # copy the image for modifications
             img_copy = img.copy()
@@ -320,43 +320,50 @@ class ImageFile(BaseFileModel):
             # Encode thumbnail to base64
             thumb_buffered = BytesIO()
             img_copy.save(thumb_buffered, format=img.format)
-            cls.thumbnail_b64_data = base64.b64encode(thumb_buffered.getvalue()).decode(
+            thumbnail_b64_data = base64.b64encode(thumb_buffered.getvalue()).decode(
                 "utf-8"
             )
             try:
                 exif = img.getexif()
                 if exif:
-                    cls.exif_data = {
+                    exif_data = {
                         ExifTags.TAGS.get(tag, tag): value
                         for tag, value in exif.items()
                     }
                     # Some exif values are bytes, decode them if possible
-                    for key, value in cls.exif_data.items():
+                    for key, value in exif_data.items():
                         if isinstance(value, bytes):
                             try:
-                                cls.exif_data[key] = value.decode(
-                                    "utf-8", errors="ignore"
-                                )
+                                exif_data[key] = value.decode("utf-8", errors="ignore")
                             except Exception:
                                 try:
                                     # I know some of them use unicode encoding
-                                    cls.exif_data[key] = value.decode(
+                                    exif_data[key] = value.decode(
                                         "unicode_escape", errors="ignore"
                                     )
                                 except Exception:
                                     # try latin-1 as last resort
                                     try:
-                                        cls.exif_data[key] = value.decode(
+                                        exif_data[key] = value.decode(
                                             "latin-1", errors="ignore"
                                         )
                                     except Exception:
                                         continue
+                else:
+                    exif_data = {}
             except Exception as e:
                 print(f"Error processing image file {file_path}: {e}")
-
+            instance.fmt = fmt
+            instance.b64_data = b64_data
+            instance.thumbnail_b64_data = thumbnail_b64_data
+            instance.exif_data = exif_data
         except Exception as e:
             print(f"Error extracting EXIF data from image file {file_path}: {e}")
-        return cls
+            instance.fmt = None
+            instance.b64_data = None
+            instance.thumbnail_b64_data = None
+            instance.exif_data = {}
+        return instance
 
     @property
     def html_thumbnail_tag(self) -> Optional[str]:

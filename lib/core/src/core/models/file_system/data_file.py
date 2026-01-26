@@ -227,6 +227,18 @@ class DataFile(BaseFileModel):
         None, description="The content of the data file as a string"
     )
 
+    @classmethod
+    def populate(cls, file_path: Path) -> "DataFile":
+        """Populate a DataFile model from a given file path."""
+        if not file_path.exists() or not file_path.is_file():
+            raise FileNotFoundError(f"File not found: {file_path}")
+        if not is_data_file(file_path):
+            raise ValueError(f"Not a valid data file: {file_path}")
+        instance = super().populate(file_path)
+        content = file_path.read_text(encoding="utf-8", errors="ignore")
+        instance.content = content
+        return instance
+
     @model_validator(mode="after")
     def validate_content_data_type(self) -> "DataFile":
         """

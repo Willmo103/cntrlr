@@ -38,6 +38,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, List, Literal, Optional
 
+from core.utils import get_sqlite_schema, get_sqlite_tables
 from pydantic import ConfigDict, field_validator, model_serializer
 from sqlalchemy import Computed, DateTime, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
@@ -235,10 +236,13 @@ class SQLiteFile(BaseFileModel):
 
     @classmethod
     def populate(cls, file_path: Path) -> "SQLiteFile":
-        super().populate(file_path)
+        instance = super().populate(file_path)
         # SQLite-specific population logic can be added here if needed
-        cls.content = file_path.read_text(encoding="utf-8", errors="ignore")
-        return cls
+        schema = get_sqlite_schema(file_path)
+        tables = get_sqlite_tables(file_path)
+        instance.schema = schema
+        instance.tables = tables
+        return instance
 
     @model_serializer()
     def serialize_model(self) -> dict:
