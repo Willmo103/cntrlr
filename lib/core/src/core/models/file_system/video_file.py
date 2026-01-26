@@ -338,9 +338,9 @@ class VideoFile(BaseFileModel):
         """Populate video-specific metadata using ffmpeg."""
         instance = super().populate(file_path)
         try:
-            duration = cls._get_video_duration(file_path)
-            codec = cls._get_video_codec(file_path)
-            width, height = cls._get_video_resolution(file_path)
+            duration = instance._get_video_duration(file_path)
+            codec = instance._get_video_codec(file_path)
+            width, height = instance._get_video_resolution(file_path)
             if width and height:
                 resolution = (width, height)
         except Exception as e:

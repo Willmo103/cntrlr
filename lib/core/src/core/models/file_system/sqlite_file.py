@@ -227,12 +227,12 @@ class SQLiteFile(BaseFileModel):
         long_description (Optional[str]): A long description of the file.
         frozen (bool): Indicates if the file is frozen (immutable).
         tables (Optional[List[str]]): List of table names in the database.
-        schema (Optional[str]): The database schema as a string.
+        db_schema (Optional[str]): The database schema as a string.
     """
 
     type: Literal["sqlite"] = "sqlite"
     tables: Optional[List[str]] = None
-    schema: Optional[str] = None
+    db_schema: Optional[str] = None
 
     @classmethod
     def populate(cls, file_path: Path) -> "SQLiteFile":
@@ -249,7 +249,7 @@ class SQLiteFile(BaseFileModel):
         return {
             **super().serialize_model(),
             "tables": self.tables,
-            "schema": self.schema,
+            "schema": self.db_schema,
         }
 
     @field_validator("tables", mode="before")

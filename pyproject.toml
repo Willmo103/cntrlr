@@ -16,8 +16,8 @@ dependencies = [
 
 [tool.uv.workspace]
 members = [
-    "lib/*"
-]
+    "lib/*",
+    ]
 
 [tool.uv.sources]
 core = { workspace = true }
@@ -61,4 +61,5 @@ combine_as_imports = true
 dev = [
     "black>=26.1.0",
     "isort>=7.0.0",
+    "pytest>=9.0.2",
 ]

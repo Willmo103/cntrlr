@@ -624,6 +624,12 @@ class BaseFileModel(BaseModel):
     def id(self) -> Optional[str]:
         return sha256(f"{self.Path}{self.sha256}".encode()).hexdigest()
 
+    @property
+    def uuid(self) -> Optional[str]:
+        return sha256(
+            f"{self.Path}{self.sha256}{self.stat_json.model_dump_json()}".encode()
+        ).hexdigest()
+
     def is_empty(self) -> bool:
         return self.stat_json.st_size == 0
 
@@ -832,6 +838,11 @@ class BaseTextFile(BaseFileModel):
             BaseTextFile: An instance of BaseTextFile populated with file data.
         """
         instance = super().populate(file_path)
+        # super() call checks for file existence and base file validations
+        # here I am checking the file's suffix against the constants.MD_EXTENSIONS_LIST
+        # via the utility function is_markdown_formattable()
+        if not is_markdown_formattable(file_path):
+            raise ValueError(f"File is not a text file: {file_path}")
 
         with file_path.open("r", encoding="utf-8", errors="ignore") as f:
             lines = f.readlines()

@@ -440,12 +440,10 @@ class RepoFile(BaseTextFile):
 
     """
 
-    from typing import Optional
-
     repo_path: Optional[str] = Field(
-        ..., description="The file's relative path within the repository"
+        None, description="The file's relative path within the repository"
     )
-    repo_id: Optional[str] = Field(..., description="The ID of the repository")
+    repo_id: Optional[str] = Field(None, description="The ID of the repository")
 
     @property
     def entity(self) -> RepoFileEntity:
@@ -657,7 +655,7 @@ class RepoScanResult(BaseScanResult):
         description="The repository model containing details about the scanned repository",
     )
 
-    @field_validator("model", mode="before")
+    @field_validator("repo_model", mode="before")
     def validate_model(cls, v: Union[Repo, dict[str, Any]]) -> Repo:
         if isinstance(v, dict):
             return Repo.model_validate(v)
@@ -670,7 +668,7 @@ class RepoScanResult(BaseScanResult):
             "git_metadata": (
                 self.git_metadata.model_dump() if self.git_metadata else None
             ),
-            "model": self.model.model_dump(),
+            "repo_model": self.model.model_dump(),
         }
 
 

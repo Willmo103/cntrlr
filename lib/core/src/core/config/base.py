@@ -112,13 +112,6 @@ REMOTES_DIR: Path = APP_ROOT / "remotes"
 """[Path] Directory where remote resources are stored."""
 # endregion
 
-# Debug output in development mode (Makes you check your config early)
-if APP_ENV == "dev":
-    print("Environment: {}".format(APP_ENV))
-    print("TTS Models Dir: {}".format(TTS_MODELS_DIR.as_posix()))
-    print("App Root: {}".format(APP_ROOT.as_posix()))
-    input("Press Enter to continue...")
-
 
 __all__ = [
     "APP_ENV",

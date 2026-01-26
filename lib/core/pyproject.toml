@@ -16,6 +16,13 @@ dependencies = [
     "sqlalchemy>=2.0.46",
     "sqlite-utils>=3.39",
 ]
+[dependency-groups]
+dev = [
+    "black>=26.1.0",
+    "isort>=7.0.0",
+    "pytest>=9.0.2",
+]
+
 
 [build-system]
 requires = ["uv_build>=0.9.26,<0.10.0"]

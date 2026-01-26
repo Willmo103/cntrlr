@@ -4,10 +4,20 @@ __pycache__/
 build/
 dist/
 wheels/
+
+# Distribution / packaging
 *.egg-info
+.coverage
+.pytest_cache/
+.tox/
+.nox/
+htmlcov/
 
 # Virtual environments
 .venv
+
+# Environment files
 settings.yml
 .env
 bak*
+.private

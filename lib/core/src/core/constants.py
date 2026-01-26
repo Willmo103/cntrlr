@@ -45,6 +45,7 @@ Design Notes:
 # Patterns for file parts to ignore (matched anywhere in path)
 from datetime import datetime
 import enum
+import os
 from typing import List
 
 # endregion
@@ -487,6 +488,10 @@ MARKDOWN_EXTENSIONS: list[str] = list(MD_XREF.keys())
 """[List[str]]: List of markdown file extensions for syntax highlighting."""
 TZ_OFFSET = datetime.now().astimezone().utcoffset().total_seconds() / 3600
 """float: Local timezone offset in hours from UTC."""
+USER: str = os.getenv("USER") or os.getenv("USERNAME") or "unknown"
+"""str: Current system user name."""
+HOSTNAME: str = os.getenv("HOSTNAME") or os.getenv("COMPUTERNAME") or "unknown"
+"""str: Current system host name."""
 # endregion
 
 
@@ -500,4 +505,7 @@ __all__ = [
     "DATA_FORMAT_LIST",
     "VIDEO_FORMAT_LIST",
     "MARKDOWN_EXTENSIONS",
+    "TZ_OFFSET",
+    "USER",
+    "HOSTNAME",
 ]

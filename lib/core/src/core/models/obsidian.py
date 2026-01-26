@@ -772,6 +772,7 @@ class ObsidianScanResult(BaseScanResult):
     A Pydantic model to represent the result of an Obsidian vault scan.
 
     Attributes:
+        id (Optional[int]): The unique identifier of the scan result.
         root (str): The root path of the scanned Obsidian vault.
         mode (Literal["obsidian"]): The scanning mode used.
         started_at (Optional[str]): The timestamp when the scan started.
@@ -781,9 +782,6 @@ class ObsidianScanResult(BaseScanResult):
         vault_notes (List[ObsidianNote]): List of text files found during the scan.
     """
 
-    id: Optional[int] = Field(
-        None, description="The unique identifier of the scan result"
-    )
     mode: Literal["obsidian"] = "obsidian"
     vault_index_json: Optional[dict[str, Any]] = Field(
         None,
