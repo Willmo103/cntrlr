@@ -1,3 +1,3 @@
-from .file_importer import FileImporter  # noqa: F401
+from .importers import FileImporter  # noqa: F401
 
 __all__ = ["FileImporter"]

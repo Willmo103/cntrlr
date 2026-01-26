@@ -45,7 +45,6 @@ Design Notes:
 # Patterns for file parts to ignore (matched anywhere in path)
 from datetime import datetime
 import enum
-from time import time
 from typing import List
 
 # endregion

@@ -74,7 +74,7 @@ class FileImporterError(Exception):
 
 # endregion
 # region File Importer Service
-class FileImporterService:
+class ImageImporterService:
     __db_session: DBSession
     __logger: T_Logger
 
@@ -138,6 +138,15 @@ class FileImporterService:
             self.__logger.exception("Failed to import images. %s", str(e), exc_info=e)
             raise FileImporterError(f"Failed to import images: {str(e)}") from e
 
+
+class VideoImporterService:
+    __db_session: DBSession
+    __logger: T_Logger
+
+    def __init__(self, db_session: DBSession, logger: T_Logger) -> None:
+        self.__db_session = db_session
+        self.__logger = logger.getChild(self.__class__.__name__)
+
     def import_videos(
         self, videos: list[VideoFile]
     ) -> Generator[StreamingServiceResponse, None, None]:
@@ -184,6 +193,15 @@ class FileImporterService:
         except Exception as e:
             self.__logger.exception("Failed to import videos. %s", str(e), exc_info=e)
             raise FileImporterError(f"Failed to import videos: {str(e)}") from e
+
+
+class RepoImporterService:
+    __db_session: DBSession
+    __logger: T_Logger
+
+    def __init__(self, db_session: DBSession, logger: T_Logger) -> None:
+        self.__db_session = db_session
+        self.__logger = logger.getChild(self.__class__.__name__)
 
     def import_repo(
         self, repo: Repo
@@ -272,6 +290,15 @@ class FileImporterService:
                 "Failed to import repository. %s", str(e), exc_info=e
             )
             raise FileImporterError(f"Failed to import repository: {str(e)}") from e
+
+
+class ObsidianVaultImporterService:
+    __db_session: DBSession
+    __logger: T_Logger
+
+    def __init__(self, db_session: DBSession, logger: T_Logger) -> None:
+        self.__db_session = db_session
+        self.__logger = logger.getChild(self.__class__.__name__)
 
     def import_obsidian_vault(self, vault: ObsidianVault) -> None:
         """

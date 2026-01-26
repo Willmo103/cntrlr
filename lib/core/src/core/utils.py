@@ -650,9 +650,9 @@ def get_repo_name(repo_path: Path) -> Optional[str]:
         Optional[str]: The repository name if the path is a valid git repository, otherwise None.
 
     Example:
-        >>> repo_name = get_repo_name(Path("/path/to/repo"))
+        >>> repo_name = get_repo_name(Path("/tmp/cntrlr"))
         >>> print(repo_name)
-        'my-repo'
+        cntrlr
     """
     if not (repo_path / ".git").exists() or not repo_path.is_dir():
         return None
@@ -666,15 +666,25 @@ def get_repo_name(repo_path: Path) -> Optional[str]:
 def clone_repository(
     repo_url: str, clone_path: Path, branch: Optional[str] = None
 ) -> Path:
-    """Clone a git repository to the specified or temporary path.
-    Args:
+    """
+    Clone a git repository to the specified or temporary path.
+
+    Arguments:
         repo_url (str): The URL of the git repository to clone.
         clone_path (Path): The local path to clone the repository into. If None, a temporary directory is used.
         branch: (Optional) The branch to clone. If None, the default branch is used.
+
     Raises:
         Exception: If cloning fails.
+
     Returns:
         Path: The path to the cloned repository.
+
+    Example:
+        >>> from core.utils import clone_repository
+        >>> repo_path = clone_repository("https://Github.com/Willmo103/cntrlr.git", Path("/tmp/cntrlr"))
+        >>> print(repo_path)
+        C:/tmp/cntrlr
     """
     try:
         if branch:
@@ -690,20 +700,66 @@ def clone_repository(
 # region Time fetchers
 
 
-def get_time() -> float:
-    """Return the current local time with timezone info."""
+def get_time() -> datetime:
+    """
+    Return the current local time with timezone info.
+
+    Arguments:
+        None
+
+    Returns:
+        datetime: The current local time with timezone info.
+
+    Example:
+        >>> from core.utils import get_time
+        >>> ct = get_time()
+        >>> print(ct)
+        2026-01-26 13:23:40.427374-06:00
+    """
     _tz = TZ_OFFSET
     return datetime.now(tz=timezone(timedelta(hours=_tz)))
 
 
 def get_time_iso(slug=False) -> str:
-    """Return the current time in ISO 8601 format."""
+    """
+    Return the current time in ISO 8601 format.
+
+    Arguments:
+        slug (bool): If True, return a slug-friendly format (no colons). Defaults to False.
+
+    Returns:
+        str: The current time in ISO 8601 format.
+
+    Example:
+        >>> from core.utils import get_time_iso
+        >>> ct = get_time_iso()
+        >>> print(ct)
+        2026-01-26T13:25:52
+        >>>
+        >>> cts = get_time_iso(slug=True)
+        >>> print(cts)
+        20260126T132636
+    """
     _fmt = "%Y%m%dT%H%M%S" if slug else "%Y-%m-%dT%H:%M:%S"
     return get_time().strftime(_fmt)
 
 
 def timestamp() -> float:
-    """Return the current timestamp in seconds since the epoch."""
+    """
+    Return the current timestamp in seconds since the epoch.
+
+    Arguments:
+        None
+
+    Returns:
+        float: The current timestamp in seconds since the epoch.
+
+    Example:
+        >>> from core.utils import timestamp
+        >>> ts = timestamp()
+        >>> print(ts)
+        1769455692.230862
+    """
     return get_time().timestamp()
 
 

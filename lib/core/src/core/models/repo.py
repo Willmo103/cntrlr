@@ -314,7 +314,8 @@ class RepoFileEntity(Base):
 # --- TRIGGER LOGIC FOR FileLinesModel ---
 # Expects JSON: { "lines": [ {"content": "...", "line_number": 1}, ... ] }
 
-repo_shred_lines_func = DDL("""
+repo_shred_lines_func = DDL(
+    """
 CREATE OR REPLACE FUNCTION process_repo_file_lines()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -344,12 +345,15 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-""")
-setup_repo_file_lines_trigger = DDL("""
+"""
+)
+setup_repo_file_lines_trigger = DDL(
+    """
 CREATE TRIGGER repo_trigger_shred_lines
 AFTER INSERT OR UPDATE OF lines_json ON repo_files
 FOR EACH ROW EXECUTE FUNCTION process_repo_file_lines();
-""")
+"""
+)
 
 
 event.listen(RepoFileEntity.__table__, "after_create", repo_shred_lines_func)  # noqa
@@ -462,7 +466,7 @@ class RepoFile(BaseTextFile):
             lines_json=self.lines_json,
         )
 
-    @model_serializer("json")
+    @model_serializer(when_used="json")
     def serialize_model(self) -> dict:
         return {
             **super().model_dump(),
@@ -503,7 +507,7 @@ class Repo(BaseDirectory):
         None, description="Timestamp when the repository was last seen"
     )
 
-    @model_serializer("json")
+    @model_serializer(when_used="json")
     def serialize_model(self) -> dict:
         return {
             **super().serialize_model(),

@@ -144,7 +144,7 @@ class TTSHistory(BaseModel):
         None, description="S3 bucket path if the audio is stored there"
     )
 
-    @model_serializer("json")
+    @model_serializer(when_used="json")
     def serialize_model(self) -> dict:
         return {
             **super().serialize_model(),

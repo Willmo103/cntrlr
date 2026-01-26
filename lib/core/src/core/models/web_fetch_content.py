@@ -166,7 +166,7 @@ class WebFetchContent(BaseModel):
         None, description="Timestamp when the content was last updated"
     )
 
-    @model_serializer("json")
+    @model_serializer(when_used="json")
     def serialize_model(self) -> dict:
         return {
             "id": self.id,

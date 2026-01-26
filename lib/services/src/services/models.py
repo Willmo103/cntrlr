@@ -1,7 +1,13 @@
+# region Imports
+
 from datetime import datetime
 from typing import Optional
 
+from core.utils import get_time
 from pydantic import BaseModel, Field
+
+# endregion
+# region Pydantic Models
 
 
 class StreamingServiceResponse(BaseModel):
@@ -40,7 +46,7 @@ class PathRecord(BaseModel):
         None, description="The type of the path record (e.g., 'file', 'directory')"
     )
     added_at: Optional[datetime] = Field(
-        None, description="Timestamp of when the path record was added"
+        default=get_time(), description="Timestamp of when the path record was added"
     )
     updated_at: Optional[datetime] = Field(
         None, description="Timestamp of the last update to the path record"
@@ -48,4 +54,7 @@ class PathRecord(BaseModel):
 
     def update(self) -> None:
         """Update the updated_at timestamp to the current time."""
-        self.updated_at = datetime.now(tz=
+        self.updated_at = get_time()
+
+
+# endregion

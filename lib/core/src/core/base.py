@@ -85,6 +85,7 @@ from core.utils import (
     get_file_stat_model,
     get_mime_type,
     get_path_model,
+    is_markdown_formattable,
 )
 
 # endregion
@@ -708,6 +709,12 @@ class BaseDirectory(BaseModel):
     def id(self) -> str:
         return sha256(f"{self.name}{self.Path.as_posix()}".encode()).hexdigest()
 
+    @property
+    def uuid(self) -> str:
+        return sha256(
+            f"{self.name}{self.Path.as_posix()}{self.stat_json.model_dump_json()}".encode()
+        ).hexdigest()
+
     @classmethod
     def populate(cls, dir_path: Path) -> "BaseDirectory":
         """
@@ -719,9 +726,12 @@ class BaseDirectory(BaseModel):
         Returns:
             BaseDirectory: An instance of BaseDirectory populated with directory data.
         """
-        if not dir_path.exists() or not dir_path.is_dir():
+        if not dir_path.exists():
             raise FileNotFoundError(f"Directory not found: {dir_path}")
-
+        if not dir_path.is_dir():
+            raise NotADirectoryError(f"Not a directory: {dir_path}")
+        if not issubclass(cls, BaseDirectory):
+            raise TypeError("cls must be a subclass of BaseDirectory")
         cls.stat_json = get_file_stat_model(dir_path)
         cls.path_json = get_path_model(dir_path)
         cls.tags = []
@@ -913,6 +923,18 @@ class BaseScanResult(BaseModel):
         ]:
             raise ValueError(f"Invalid scan mode: {v}")
         return v
+
+    @property
+    def Path(self) -> Path:
+        return Path(self.root)
+
+    @property
+    def id(self) -> str:
+        return sha256(f"{self.root}{self.mode}".encode()).hexdigest()
+
+    @property
+    def uuid(self) -> str:
+        return sha256(f"{self.root}{self.mode}{self.started_at}".encode()).hexdigest()
 
     @property
     def duration_seconds(self) -> Optional[float]:

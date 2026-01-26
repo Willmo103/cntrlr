@@ -83,11 +83,11 @@ from core.config.base import APP_ROOT, TTS_MODELS_DIR
 from core.config.factory import get_settings  # noqa: F401  This is used externally
 from core.config.factory import FactoryBaseSettings
 
+
 # endregion
-# region Server Settings Classes
-
-
 # region ControllerAPISettings Class
+
+
 class ControllerAPISettings(FactoryBaseSettings):
     """
     Controller API configuration settings.
@@ -112,6 +112,8 @@ class ControllerAPISettings(FactoryBaseSettings):
 
 # endregion
 # region ConverterAPISettings Class
+
+
 class ConverterAPISettings(FactoryBaseSettings):
     """
     Converter API configuration settings.
@@ -136,6 +138,8 @@ class ConverterAPISettings(FactoryBaseSettings):
 
 # endregion
 # region TTSServerSettings Class
+
+
 class TTSServerSettings(FactoryBaseSettings):
     """
     Configuration for the Piper TTS Service.
@@ -180,6 +184,8 @@ class TTSServerSettings(FactoryBaseSettings):
 
 # endregion
 # region STTSettings Class
+
+
 class STTSettings(FactoryBaseSettings):
     """
     Configuration for the STT Service.
@@ -214,6 +220,8 @@ class STTSettings(FactoryBaseSettings):
 
 # endregion
 # region UiServerSettings Class
+
+
 class UiServerSettings(FactoryBaseSettings):
     """
     Configuration for the UI Server.
@@ -252,7 +260,10 @@ class UiServerSettings(FactoryBaseSettings):
     )
 
 
+# endregion
 # region Server AuthSettings Class
+
+
 class AuthSettings(FactoryBaseSettings):
     """
     Authentication configuration settings.
@@ -286,12 +297,9 @@ class AuthSettings(FactoryBaseSettings):
 
 
 # endregion
-# endregion
-# endregion
-# region Services Settings Classes
-
-
 # region OllamaSettings Class
+
+
 class OllamaSettings(FactoryBaseSettings):
     """
     Configuration for the Ollama LLM Service.
@@ -341,6 +349,8 @@ class OllamaSettings(FactoryBaseSettings):
 
 # endregion
 # region MQTTSettings Class
+
+
 class MQTTSettings(FactoryBaseSettings):
     """
     Configuration for the MQTT Broker.
@@ -375,6 +385,8 @@ class MQTTSettings(FactoryBaseSettings):
 
 # endregion
 # region S3Settings Class
+
+
 class S3Settings(FactoryBaseSettings):
     """
     S3-compatible storage configuration settings.
@@ -425,6 +437,8 @@ class S3Settings(FactoryBaseSettings):
 
 # endregion
 # region GotifySettings Class
+
+
 class GotifySettings(FactoryBaseSettings):
     """
     Configuration for Gotify Notification Service.
@@ -454,6 +468,8 @@ class GotifySettings(FactoryBaseSettings):
 
 # endregion
 # region ClipboardWatcherSettings Class
+
+
 class ClipboardWatcherSettings(FactoryBaseSettings):
     """
     Configuration for the Clipboard Watcher Service.
@@ -478,6 +494,8 @@ class ClipboardWatcherSettings(FactoryBaseSettings):
 
 # endregion
 # region RedditSettings Class
+
+
 class RedditSettings(FactoryBaseSettings):
     """
     PRAW Client configuration settings.
@@ -502,6 +520,8 @@ class RedditSettings(FactoryBaseSettings):
 
 # endregion
 # region DatabaseSettings Class
+
+
 class DatabaseSettings(FactoryBaseSettings):
     """
     Database configuration settings.
@@ -535,8 +555,9 @@ class DatabaseSettings(FactoryBaseSettings):
 
 
 # endregion
-# endregion
 # region CliSettings Class
+
+
 class CliSettings(FactoryBaseSettings):
     """
     CLI configuration settings.
@@ -556,6 +577,8 @@ class CliSettings(FactoryBaseSettings):
 
 # endregion
 # region AppSettings Class
+
+
 class AppSettings(FactoryBaseSettings):
     """Application configuration settings."""
 
@@ -568,11 +591,6 @@ class AppSettings(FactoryBaseSettings):
         default="APP_ENV",
         description="Current application environment (prod, docker, dev).",
         alias="ENVIRONMENT",
-    )
-    tz: timezone = Field(
-        default=timezone(timedelta(hours=0)),
-        description="[timezone] Timezone for the server.",
-        alias="SERVER_TIMEZONE_OFFSET_HOURS",
     )
 
     @property
@@ -601,18 +619,9 @@ class AppSettings(FactoryBaseSettings):
         db_path = self.app_root / "cntrlr.db"
         return Database(db_path)
 
-    @field_validator("tz", mode="before")
-    def parse_timezone(cls, v: Any) -> Any:
-        if isinstance(v, str):
-            try:
-                offset_hours = int(v)
-                return timezone(timedelta(hours=offset_hours))
-            except ValueError:
-                pass
-        return v
-
 
 # endregion
+
 
 __all__ = [
     "AppSettings",

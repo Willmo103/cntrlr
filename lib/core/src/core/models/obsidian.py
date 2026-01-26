@@ -644,7 +644,7 @@ class ObsidianNoteLine(BaseModel):
         """Returns the length of the line content."""
         return len(self.content)
 
-    @model_serializer("json")
+    @model_serializer(when_used="json")
     def serialize_model(self) -> dict:
         return {
             "id": self.id if self.id is not None else None,
@@ -739,7 +739,7 @@ class ObsidianVault(BaseDirectory):
         elif isinstance(v, dict):
             return v
 
-    @model_serializer("json")
+    @model_serializer(when_used="json")
     def serialize_model(self) -> dict:
         return {
             **super().serialize_model(),
@@ -802,12 +802,6 @@ class ObsidianScanResult(BaseScanResult):
             return [ObsidianNote.model_validate(item) for item in v]
         return v
 
-    @field_validator("type", mode="before")
-    def validate_type(cls, v: Union[str, None]) -> Optional[str]:
-        if v != "obsidian":
-            raise ValueError(f"Invalid scan type: {v}")
-        return v
-
     @model_serializer(when_used="json")
     def serialize_model(self) -> dict:
         return {
@@ -815,7 +809,7 @@ class ObsidianScanResult(BaseScanResult):
             "vault_index_json": (
                 json.dumps(self.vault_index_json) if self.vault_index_json else None
             ),
-            "files": [file.model_dump() for file in self.vault_notes],
+            "vault_notes": [file.model_dump() for file in self.vault_notes],
         }
 
     @property
