@@ -34,6 +34,7 @@ Design notes:
 - The model_validator ensures only recognized data file types are represented by this model.
 - Equality and hashing on the entity are based on id and sha256 for reliable identity checks.
 """
+
 # endregion
 # region Imports
 from datetime import datetime
@@ -44,8 +45,8 @@ from pydantic import Field, model_serializer, model_validator
 from sqlalchemy import JSON, Computed, DateTime, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
+from core.base import BaseFileModel, BaseFileStat, FilePath
 from core.database import Base
-from core.models.file_system.base import BaseFileModel, BaseFileStat, FilePath
 from core.utils import is_data_file
 
 

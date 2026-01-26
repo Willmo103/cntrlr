@@ -27,6 +27,7 @@ Design notes:
     reflecting that either can uniquely identify a network host.
 - The model uses ConfigDict with from_attributes=True to enable ORM mode compatibility.
 """
+
 # endregion
 # region Imports
 from datetime import datetime
@@ -38,7 +39,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from core.config import field_validator
 from core.database import Base
-
 
 # endregion
 # region SQLAlchemy Model

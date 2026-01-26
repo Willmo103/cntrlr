@@ -68,6 +68,7 @@ Design Notes:
     be overridden in production via environment variables.
 
 """
+
 # endregion
 # region Imports
 
@@ -81,7 +82,6 @@ from sqlite_utils import Database
 from core.config.base import APP_ROOT, TTS_MODELS_DIR
 from core.config.factory import get_settings  # noqa: F401  This is used externally
 from core.config.factory import FactoryBaseSettings
-
 
 # endregion
 # region Server Settings Classes

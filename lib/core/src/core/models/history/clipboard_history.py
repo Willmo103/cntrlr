@@ -30,6 +30,7 @@ Design notes:
 - Timestamps (timestamp, created_at, updated_at) enable chronological ordering and
     audit trails.
 """
+
 # endregion
 # region Imports
 from datetime import datetime

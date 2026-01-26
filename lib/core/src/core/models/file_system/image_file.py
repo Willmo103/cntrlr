@@ -53,6 +53,7 @@ Design notes:
 - Tag validation (inherited from BaseFileModel) ensures lowercase, dash-separated,
     hash-prefixed format for consistency.
 """
+
 # endregion
 # region Imports
 import base64
@@ -66,13 +67,13 @@ from pydantic import Field, field_validator, model_serializer
 from sqlalchemy import JSON, Boolean, Computed, DateTime, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
-from core.database import Base
-from core.models.file_system.base import (
+from core.base import (
     BaseFileModel,
     BaseFileStat,
     BaseScanResult,
     FilePath,
 )
+from core.database import Base
 
 
 # endregion

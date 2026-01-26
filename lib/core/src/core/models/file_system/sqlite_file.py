@@ -31,6 +31,7 @@ Design notes:
     JSON fields without requiring application-side recomputation.
 - Pydantic validators ensure type safety for SQLite-specific fields (e.g., tables list).
 """
+
 # endregion
 # region Imports
 from datetime import datetime
@@ -42,8 +43,8 @@ from sqlalchemy import Computed, DateTime, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from core import SQLiteFile
+from core.base import BaseFileModel, BaseFileStat, FilePath
 from core.database import Base
-from core.models.file_system.base import BaseFileModel, BaseFileStat, FilePath
 
 
 # endregion

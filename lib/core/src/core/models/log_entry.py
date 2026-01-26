@@ -20,6 +20,7 @@ Design notes:
 - Equality and hashing are based on all log attributes to support set operations
     and duplicate detection.
 """
+
 # endregion
 # region Imports
 from datetime import datetime
@@ -31,7 +32,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
 from core.database import Base
-
 
 # endregion
 # region Sqlalchemy Model

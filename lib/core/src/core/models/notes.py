@@ -29,6 +29,7 @@ Design notes:
 - ConfigDict with from_attributes=True enables direct model validation from ORM objects.
 
 """
+
 # endregion
 # region Imports
 from datetime import datetime
@@ -40,7 +41,6 @@ from sqlalchemy import JSON, DateTime, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from core.database import Base
-
 
 # endregion
 # region Sqlalchemy Note Model

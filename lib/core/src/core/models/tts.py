@@ -29,6 +29,7 @@ Design notes:
 - Timestamps are server-generated using func.now() for consistency.
 
 """
+
 # endregion
 # region Imports
 from datetime import datetime
@@ -40,7 +41,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
 from core.database import Base
-
 
 # endregion
 

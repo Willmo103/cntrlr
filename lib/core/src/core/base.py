@@ -63,6 +63,7 @@ Design Notes:
 - Platform-specific stat models allow accurate representation of file metadata across
     macOS, Linux, and Windows environments.
 """
+
 # endregion
 # region Imports
 from datetime import datetime
@@ -79,14 +80,12 @@ from pydantic import (
     model_validator,
 )
 
-from core import settings
 from core.utils import (
     get_file_sha256,
     get_file_stat_model,
     get_mime_type,
     get_path_model,
 )
-
 
 # endregion
 # region Base File System Models
@@ -353,7 +352,7 @@ class BaseFileStat(BaseModel):
         ]:
             if data.get(field) is not None:
                 data[field] = datetime.fromtimestamp(
-                    data[field], tz=settings.tz
+                    data[field], datetime.now()
                 ).isoformat()
         return data
 
@@ -402,7 +401,7 @@ class MacOSFileStat(BaseFileStat):
         data = super().convert_to_iso_datetimes()
         if data.get("st_birthtime") is not None:
             data["st_birthtime"] = datetime.fromtimestamp(
-                data["st_birthtime"], tz=settings.tz
+                data["st_birthtime"], tz=datetime.now()
             ).isoformat()
         return data
 
@@ -455,7 +454,7 @@ class LinuxFileStat(BaseFileStat):
         for field in ["st_atim", "st_mtim", "st_ctim"]:
             if data.get(field) is not None:
                 data[field] = datetime.fromtimestamp(
-                    data[field], tz=settings.tz
+                    data[field], tz=datetime.now()
                 ).isoformat()
         return data
 
@@ -733,6 +732,29 @@ class BaseDirectory(BaseModel):
     def id(self) -> str:
         return sha256(f"{self.name}{self.Path.as_posix()}".encode()).hexdigest()
 
+    @classmethod
+    def populate(cls, dir_path: Path) -> "BaseDirectory":
+        """
+        Populate the model attributes based on the given directory path.
+
+        Args:
+            dir_path (Path): The path to the directory.
+
+        Returns:
+            BaseDirectory: An instance of BaseDirectory populated with directory data.
+        """
+        if not dir_path.exists() or not dir_path.is_dir():
+            raise FileNotFoundError(f"Directory not found: {dir_path}")
+
+        cls.stat_json = get_file_stat_model(dir_path)
+        cls.path_json = get_path_model(dir_path)
+        cls.tags = []
+        cls.short_description = None
+        cls.long_description = None
+        cls.frozen = False
+
+        return cls
+
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
     )
@@ -813,7 +835,16 @@ class BaseTextFile(BaseFileModel):
     lines_json: Optional[list[TextFileLine]] = []
 
     @classmethod
-    def populate(cls, file_path: Path) -> None:
+    def populate(cls, file_path: Path) -> "BaseTextFile":
+        """
+        Populate the model attributes based on the given text file path.
+
+        Args:
+            file_path (Path): The path to the text file.
+
+        Returns:
+            BaseTextFile: An instance of BaseTextFile populated with file data.
+        """
         super(cls).populate(file_path)
         with file_path.open("r", encoding="utf-8", errors="ignore") as f:
             lines = f.readlines()
@@ -877,7 +908,7 @@ class BaseScanResult(BaseModel):
         "all",
     ] = Field("all", description="The scanning mode used")
     started_at: Optional[datetime] = Field(
-        default_factory=settings.get_time,
+        None,
         description="Timestamp when the scan started",
     )
     ended_at: Optional[datetime] = Field(

@@ -2,24 +2,27 @@
 """
 Scanning Service Module
 """
+
 # endregion
 # region Imports
 from datetime import datetime
+from logging import Logger as T_Logger
 from pathlib import Path
+
+from pydantic import Field
+
+from core.base import BaseModel
+from core.config import AppSettings
 from core.models import (  # noqa: F401
-    Repo,
-    RepoScanResult,
-    ObsidianNote,
-    ObsidianScanResult,
     ImageFile,
     ImageScanResult,
+    ObsidianNote,
+    ObsidianScanResult,
+    Repo,
+    RepoScanResult,
     VideoFile,
     VideoScanResult,
 )
-from logging import Logger as T_Logger
-from core.config import AppSettings
-from core.models.file_system.base import BaseModel
-from pydantic import Field
 
 
 # endregion

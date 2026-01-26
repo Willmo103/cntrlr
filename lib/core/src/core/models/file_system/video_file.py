@@ -46,6 +46,7 @@ Design notes:
 - The .populate() method gracefully handles missing cv2 dependency for minimal environments.
 - Equality and hashing are based on SHA-256 content hash for deduplication support.
 """
+
 import subprocess
 
 # endregion
@@ -68,13 +69,13 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from core.database import Base
-from core.models.file_system.base import (
+from core.base import (
     BaseFileModel,
     BaseFileStat,
     BaseScanResult,
     FilePath,
 )
+from core.database import Base
 
 
 # endregion

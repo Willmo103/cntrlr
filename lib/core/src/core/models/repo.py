@@ -62,6 +62,7 @@ Design notes:
 - The trigger-based line extraction ensures file content changes reflected in lines_json
     are indexed into a relational structure suitable for fast search.
 """
+
 # endregion
 # region Imports
 from datetime import datetime
@@ -84,15 +85,14 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from core.config.base import REMOTES_DIR
-from core.database import Base
-from core.models.file_system.base import (
+from core.base import (
     BaseDirectory,
     BaseScanResult,
     BaseTextFile,
     TextFileLine,
 )
-
+from core.config.base import REMOTES_DIR
+from core.database import Base
 
 # endregion
 # region Pydantic Models for Git Metadata
@@ -314,8 +314,7 @@ class RepoFileEntity(Base):
 # --- TRIGGER LOGIC FOR FileLinesModel ---
 # Expects JSON: { "lines": [ {"content": "...", "line_number": 1}, ... ] }
 
-repo_shred_lines_func = DDL(
-    """
+repo_shred_lines_func = DDL("""
 CREATE OR REPLACE FUNCTION process_repo_file_lines()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -345,15 +344,12 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-"""
-)
-setup_repo_file_lines_trigger = DDL(
-    """
+""")
+setup_repo_file_lines_trigger = DDL("""
 CREATE TRIGGER repo_trigger_shred_lines
 AFTER INSERT OR UPDATE OF lines_json ON repo_files
 FOR EACH ROW EXECUTE FUNCTION process_repo_file_lines();
-"""
-)
+""")
 
 
 event.listen(RepoFileEntity.__table__, "after_create", repo_shred_lines_func)  # noqa

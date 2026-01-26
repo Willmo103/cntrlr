@@ -11,7 +11,6 @@ from pathlib import Path
 import typer  # pyright: ignore[reportMissingImports]
 from rich.console import Console  # pyright: ignore[reportMissingImports]
 
-
 PACKAGE_ROOT = Path(__file__).parent.parent.resolve()
 LIBRARY_PATHS = {
     "core": PACKAGE_ROOT.parent / "lib" / "core",

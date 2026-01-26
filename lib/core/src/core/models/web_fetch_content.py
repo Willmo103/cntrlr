@@ -34,6 +34,7 @@ Design notes:
     compatibility with existing records.
 - UUID-based equality and hashing enables deduplication of fetched content.
 """
+
 # endregion
 # region Imports
 from datetime import datetime
@@ -44,7 +45,6 @@ from sqlalchemy import JSON, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from core.database import Base
-
 
 # endregion
 

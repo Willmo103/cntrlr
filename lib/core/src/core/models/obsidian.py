@@ -90,6 +90,7 @@ Design Notes:
 - All models use Pydantic v2 conventions with field_validator, field_serializer,
     and model_serializer decorators for consistent behavior.
 """
+
 # endregion
 # region Imports
 
@@ -119,14 +120,13 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from core.database import Base
-from core.models.file_system.base import (
+from core.base import (
     BaseDirectory,
     BaseFileModel,
     BaseScanResult,
     TextFileLine,
 )
-
+from core.database import Base
 
 # endregion
 # region Constants
@@ -344,8 +344,7 @@ class ObsidianNoteEntity(Base):
 # Expects JSON: { "lines": [ {"content": "...", "line_number": 1}, ... ] }
 
 
-note_shred_lines_func = DDL(
-    """
+note_shred_lines_func = DDL("""
 CREATE OR REPLACE FUNCTION process_obsidian_file_lines()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -375,15 +374,12 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-"""
-)
-note_trigger_setup = DDL(
-    """
+""")
+note_trigger_setup = DDL("""
 CREATE TRIGGER trigger_shred_lines
 AFTER INSERT OR UPDATE OF lines_json ON obsidian_files
 FOR EACH ROW EXECUTE FUNCTION process_obsidian_file_lines();
-"""
-)
+""")
 event.listen(
     ObsidianNoteEntity.__table__, "after_create", note_shred_lines_func
 )  # noqa

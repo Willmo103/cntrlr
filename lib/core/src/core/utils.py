@@ -1,6 +1,9 @@
 import stat
 import sys
 from pathlib import Path
+from typing import Optional
+
+import git
 
 from core.constants import (
     DATA_FORMAT_LIST,
@@ -9,20 +12,6 @@ from core.constants import (
     MD_XREF,
     VIDEO_FORMAT_LIST,
 )
-from core.models.file_system.audio_file import AudioFile
-from core.models.file_system.base import BaseFileStat, MacOSFileStat, WindowsFileStat
-from core.models.file_system.image_file import ImageFile
-from core.models.file_system.sqlite_file import SQLiteFile
-from core.models.file_system.video_file import VideoFile
-
-
-from pathlib import Path
-from typing import Optional
-
-import git
-
-from core.models.repo import GitCommit
-from core.models.repo import GitMetadata
 
 
 def is_markdown_formattable(path: Path) -> bool:
@@ -246,7 +235,7 @@ def get_file_stat_model(file_path: Path) -> "BaseFileStat":  # type: ignore # no
         >>> print(stat_model)
         LinuxFileStatModel(...)
     """
-    from core.models.file_system.base import LinuxFileStat
+    from core.base import LinuxFileStat, MacOSFileStat, WindowsFileStat, BaseFileStat
 
     file_stat = stat(file_path)
 
@@ -299,7 +288,7 @@ def get_path_model(file_path: Path) -> "PathModel":  # type: ignore  # noqa: F82
         >>> print(path_model)
         PathModel(...)
     """
-    from core.models.file_system.base import FilePath
+    from core.base import FilePath
 
     return FilePath(
         name=file_path.name,
@@ -356,7 +345,7 @@ def BaseFileModel_from_Path(file_path: Path) -> "BaseFileModel":  # type: ignore
         >>> print(file_model)
         BaseFileModel(...)
     """
-    from core.models.file_system.base import BaseFileModel
+    from core.base import BaseFileModel
 
     try:
         file_model = BaseFileModel(
@@ -470,7 +459,7 @@ def SqliteFileModel_from_Path(file_path: Path) -> "SQLiteFile":  # type: ignore 
         ) from e
 
 
-def AudioFileModel_from_Path(file_path: Path) -> "AudioFile":  # type: ignore  # noqa: F821
+def AudioFileModel_from_Path(file_path: Path) -> AudioFile:  # type: ignore  # noqa: F821
     """
     Create an AudioFileModel instance from a given file path.
 
@@ -487,8 +476,10 @@ def AudioFileModel_from_Path(file_path: Path) -> "AudioFile":  # type: ignore  #
     raise NotImplementedError("This function is not yet implemented.")
 
 
-def get_git_metadata(repo_path: Path) -> GitMetadata | None:
+def get_git_metadata(repo_path: Path) -> Optional[GitMetadata]:  # type: ignore  # noqa: F821
     """Extract git metadata from repository."""
+    from core.models.repo import GitCommit, GitMetadata
+
     if not (repo_path / ".git").exists() or not repo_path.is_dir():
         return None
     try:
@@ -531,12 +522,14 @@ def get_git_metadata(repo_path: Path) -> GitMetadata | None:
             untracked_files=untracked_files,
             commit_history=get_all_commits(repo_path, max_count=10) or [],
         )
-    except Exception as e:
+    except Exception:
         return None
 
 
-def get_latest_commit(repo_path: Path) -> GitCommit | None:
+def get_latest_commit(repo_path: Path) -> Optional[GitCommit]:  # type: ignore  # noqa: F821
     """Get the latest commit information from the git repository."""
+    from core.models.repo import GitCommit
+
     if not (repo_path / ".git").exists() or not repo_path.is_dir():
         return None
     try:
@@ -552,8 +545,10 @@ def get_latest_commit(repo_path: Path) -> GitCommit | None:
         return None
 
 
-def get_all_commits(repo_path: Path, max_count: int = 10) -> list[GitCommit] | None:
+def get_all_commits(repo_path: Path, max_count: int = 10) -> Optional[list[GitCommit]]:  # type: ignore  # noqa: F821
     """Get a list of commits from the git repository."""
+    from core.models.repo import GitCommit
+
     if not (repo_path / ".git").exists() or not repo_path.is_dir():
         return None
     try:
@@ -573,7 +568,7 @@ def get_all_commits(repo_path: Path, max_count: int = 10) -> list[GitCommit] | N
         return None
 
 
-def get_repo_name(repo_path: Path) -> str | None:
+def get_repo_name(repo_path: Path) -> Optional[str]:
     """Get the repository name from the git repository."""
     if not (repo_path / ".git").exists() or not repo_path.is_dir():
         return None

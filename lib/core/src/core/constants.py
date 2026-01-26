@@ -39,12 +39,12 @@ Design Notes:
 - Format enums inherit from both str and enum.Enum, allowing direct string comparison
     while maintaining type safety and IDE autocompletion support.
 """
+
 # endregion
 # region Imports
 # Patterns for file parts to ignore (matched anywhere in path)
 import enum
 from typing import List
-
 
 # endregion
 # region Constants -- IGNORE_PARTS

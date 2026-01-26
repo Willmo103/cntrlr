@@ -29,6 +29,7 @@ Design notes:
     workflows and speech-to-text integrations.
 - video_id field supports linking audio tracks extracted from video files.
 """
+
 # endregion
 # region Imports
 from datetime import datetime
@@ -39,8 +40,8 @@ from pydantic import model_serializer
 from sqlalchemy import Computed, DateTime, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
+from core.base import BaseFileModel, BaseFileStat, FilePath
 from core.database import Base
-from core.models.file_system.base import BaseFileModel, BaseFileStat, FilePath
 
 
 # endregion
