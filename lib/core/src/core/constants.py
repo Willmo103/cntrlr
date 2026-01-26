@@ -43,7 +43,9 @@ Design Notes:
 # endregion
 # region Imports
 # Patterns for file parts to ignore (matched anywhere in path)
+from datetime import datetime
 import enum
+from time import time
 from typing import List
 
 # endregion
@@ -484,7 +486,8 @@ VIDEO_FORMAT_LIST: List[str] = [fmt.value for fmt in VideoFormats]
 """List[str]: Lists of supported formats for images, data, and videos."""
 MARKDOWN_EXTENSIONS: list[str] = list(MD_XREF.keys())
 """[List[str]]: List of markdown file extensions for syntax highlighting."""
-
+TZ_OFFSET = datetime.now().astimezone().utcoffset().total_seconds() / 3600
+"""float: Local timezone offset in hours from UTC."""
 # endregion
 
 

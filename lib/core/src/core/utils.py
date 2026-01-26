@@ -42,6 +42,7 @@ Dependencies
 """
 # endregion
 # region Imports
+from datetime import datetime, timedelta, timezone
 import sys
 from pathlib import Path
 from typing import Optional, Union
@@ -53,6 +54,7 @@ from core.constants import (
     IMAGE_FORMAT_LIST,
     MARKDOWN_EXTENSIONS,
     MD_XREF,
+    TZ_OFFSET,
     VIDEO_FORMAT_LIST,
 )
 
@@ -682,6 +684,27 @@ def clone_repository(
         return clone_path
     except Exception as e:
         raise Exception(f"Failed to clone repository: {e}")
+
+
+# endregion
+# region Time fetchers
+
+
+def get_time() -> float:
+    """Return the current local time with timezone info."""
+    _tz = TZ_OFFSET
+    return datetime.now(tz=timezone(timedelta(hours=_tz)))
+
+
+def get_time_iso(slug=False) -> str:
+    """Return the current time in ISO 8601 format."""
+    _fmt = "%Y%m%dT%H%M%S" if slug else "%Y-%m-%dT%H:%M:%S"
+    return get_time().strftime(_fmt)
+
+
+def timestamp() -> float:
+    """Return the current timestamp in seconds since the epoch."""
+    return get_time().timestamp()
 
 
 # endregion
