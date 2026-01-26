@@ -61,6 +61,7 @@ from core.constants import (
 # region General Utilities
 # General utility functions for various tasks.
 
+
 def is_markdown_formattable(path: Path) -> bool:
     """Check if the given path has a markdown file extension.
 
@@ -219,6 +220,7 @@ def get_sqlite_tables(path: Path) -> list[str]:
         raise ValueError(f"Invalid SQLite database file: {path}")
     except Exception as e:
         raise ValueError(f"Error retrieving tables: {str(e)}") from e
+
 
 # endregion
 # region File Utilities
@@ -395,18 +397,7 @@ def BaseFileModel_from_Path(file_path: Path) -> "BaseFileModel":  # type: ignore
     from core.base import BaseFileModel
 
     try:
-        file_model = BaseFileModel(
-            sha256=get_file_sha256(file_path),
-            stat_json=get_file_stat_model(file_path),
-            path_json=get_path_model(file_path),
-            mime_type=get_mime_type(file_path),
-            tags=[],  # Initialize with empty tags list
-            short_description=None,  # Set default to None
-            long_description=None,  # Set default to None
-            frozen=False,  # Set default to False
-        )
-        file_model.populate(file_path)
-        return file_model
+        return BaseFileModel.populate(file_path)
     except Exception as e:
         raise RuntimeError(
             f"Error creating BaseFileModel from path {file_path}: {e}"
@@ -434,10 +425,7 @@ def ImageFileModel_from_Path(file_path: Path) -> "ImageFile":  # type: ignore  #
     from core.models.file_system.image_file import ImageFile
 
     try:
-        _base = BaseFileModel_from_Path(file_path)
-        img_model = ImageFile.model_validate(_base.model_dump())
-        img_model.populate(file_path)
-        return img_model
+        return ImageFile.populate(file_path)
     except Exception as e:
         raise RuntimeError(
             f"Error creating ImageFileModel from path {file_path}: {e}"
@@ -465,10 +453,7 @@ def VideoFileModel_from_Path(file_path: Path) -> "VideoFile":  # type: ignore  #
     from core.models.file_system.video_file import VideoFile
 
     try:
-        _base = BaseFileModel_from_Path(file_path)
-        video_model = VideoFile.model_validate(_base.model_dump())
-        video_model.populate(file_path)
-        return video_model
+        return VideoFile.populate(file_path)
     except Exception as e:
         raise RuntimeError(
             f"Error creating VideoFileModel from path {file_path}: {e}"
@@ -493,13 +478,10 @@ def SqliteFileModel_from_Path(file_path: Path) -> "SQLiteFile":  # type: ignore 
         >>> print(sqlite_model)
         SQLiteFileModel(...)
     """
-    from core.models. import SQLiteFile
+    from core.models.file_system import SQLiteFile
 
     try:
-        _base = BaseFileModel_from_Path(file_path)
-        sqlite_model = SQLiteFile.populate(file_path)
-        sqlite_model.populate(file_path)
-        return sqlite_model
+        return SQLiteFile.populate(file_path)
     except Exception as e:
         raise RuntimeError(
             f"Error creating SQLiteFileModel from path {file_path}: {e}"
@@ -518,13 +500,23 @@ def AudioFileModel_from_Path(file_path: Path) -> AudioFile:  # type: ignore  # n
 
     Example:
         >>> audio_model = AudioFileModel_from_Path(Path("song.mp3"))
-        >>> Error: NotImplementedError("This function is not yet implemented.")
+        >>> print(audio_model)
+        AudioFileModel(...)
     """
-    raise NotImplementedError("This function is not yet implemented.")
+    from core.models.file_system.audio_file import AudioFile
+
+    try:
+        return AudioFile.populate(file_path)
+    except Exception as e:
+        raise RuntimeError(
+            f"Error creating AudioFileModel from path {file_path}: {e}"
+        ) from e
+
 
 # endregion
 # region Git Utilities
 # Utility functions for git repository operations.
+
 
 def get_git_metadata(repo_path: Path) -> Optional[GitMetadata]:  # type: ignore  # noqa: F821
     """
