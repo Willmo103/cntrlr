@@ -785,6 +785,16 @@ class BaseTextFile(BaseFileModel):
 
 
 class BaseScanResult(BaseModel):
+    """
+    A Pydantic model to represent the result of a file system scan.
+
+    Attributes:
+        root (str): The root directory that was scanned.
+        mode (Literal): The scanning mode used.
+        started_at (Optional[datetime]): The timestamp when the scan started.
+        ended_at (Optional[datetime]): The timestamp when the scan ended.
+    """
+
     root: str = Field(..., description="The root directory that was scanned")
     mode: Literal[
         "git-local",

@@ -66,14 +66,6 @@ Design notes:
 # region Imports
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional, Union
-
-from core.database import Base
-from core.models.file_system.base import (
-    BaseDirectory,
-    BaseScanResult,
-    BaseTextFile,
-    TextFileLine,
-)
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_serializer
 from sqlalchemy import (
     DDL,
@@ -85,10 +77,19 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
-    event,
     func,
+    event,
 )
 from sqlalchemy.orm import Mapped, mapped_column
+
+
+from core.database import Base
+from core.models.file_system.base import (
+    BaseDirectory,
+    BaseTextFile,
+    TextFileLine,
+    BaseScanResult,
+)
 
 
 # endregion
@@ -161,6 +162,10 @@ class RepoEntity(Base):
     git_metadata: Mapped[Optional[dict]] = mapped_column(String, nullable=True)
     last_seen: Mapped[Optional[datetime]] = mapped_column(String(30), nullable=True)
 
+    files: Mapped[List["RepoFileEntity"]] = mapped_column(
+        ForeignKey("repo_files.repo_id"), default=[]
+    )
+
     # DB Record Timestamps
     created_at: Mapped[datetime] = mapped_column(String(30), nullable=False)
     updated_at: Mapped[Optional[datetime]] = mapped_column(String(30), nullable=True)
@@ -171,6 +176,19 @@ class RepoEntity(Base):
 
     def __repr__(self) -> str:
         return f"<Repo(id={self.id}, path='{self.path_json.get('full_path', '')}')>"
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, RepoEntity):
+            return NotImplemented
+
+        return self.git_metadata == other.git_metadata
+
+    def __hash__(self) -> int:
+        return hash(self.git_metadata)
+
+    @property
+    def model(self) -> "Repo":
+        return Repo.model_validate(**self.__dict__)
 
 
 class RepoFileEntity(Base):
@@ -198,7 +216,7 @@ class RepoFileEntity(Base):
     __tablename__ = "repo_files"
 
     id: Mapped[str] = mapped_column(primary_key=True)
-    scan_id: Mapped[int] = mapped_column(ForeignKey("repo_scans.id"), index=True)
+    repo_id: Mapped[int] = mapped_column(ForeignKey("repos.id"), index=True)
 
     # --- COMPUTED METADATA (Matching Pydantic PathModel) ---
     filename: Mapped[str] = mapped_column(
@@ -349,9 +367,9 @@ class RepoFileLineEntity(Base):
     content_hash: Mapped[str] = mapped_column(String(64), index=True)
 
     @property
-    def model(self) -> "TextFileLine":
+    def model(self) -> TextFileLine:
         """Return the Pydantic model representation of the file line."""
-        return "RepoFileLine"(
+        return TextFileLine(
             file_id=self.file_id,
             line_number=self.line_number,
             content=self.content,

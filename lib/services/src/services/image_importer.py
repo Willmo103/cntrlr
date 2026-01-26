@@ -28,10 +28,11 @@ Design Notes:
     for traceable error reporting.
 - Compatible with ImageScanResult from core.models.file_system.image_file which
     extends BaseScanResult patterns.
-
 """
 # endregion
 # region Imports
+from logging import Logger
+from typing import Optional
 from core.database import DatabaseSessionGenerator
 from core.models.file_system.image_file import (
     ImageFileEntity,
@@ -44,6 +45,16 @@ from pydantic import BaseModel
 # region Image Importer Service
 # region Result Models
 class ImageImporterResult(BaseModel):
+    """
+    Result model for image import operations.
+
+    Attributes:
+        image_id (Optional[int]): The ID of the imported image file in the database.
+        success (bool): Indicates if the import was successful.
+        message (str): Descriptive message about the import result.
+    """
+
+    image_id: Optional[int] = None
     success: bool
     message: str
 
@@ -55,7 +66,7 @@ class ImageImporter:
     Service for importing and processing image files.
     """
 
-    def __init__(self, db: DatabaseSessionGenerator):
+    def __init__(self, db: DatabaseSessionGenerator, logger: Logger):
         """
         Initializes the ImageImporter with a database session generator and logger.
 
@@ -64,19 +75,24 @@ class ImageImporter:
             logger (Logger): The logger instance for logging.
         """
         self.db_session_generator = db
+        self.logger = logger.getChild("ImageImporter")
 
-    def process_result(self, scan_result: ImageScanResult) -> list[ImageImporterResult]:
+    def import_image_scan(
+        self, scan_result: ImageScanResult
+    ) -> list[ImageImporterResult]:
         """
         Processes the image scan result and imports image files into the database.
 
-        Args:
+        Arguments:
             scan_result (ImageScanResult): The result of the image scan.
 
         Returns:
-            list[ImporterResult]: A list of results for each imported image file.
+            list[ImageImporterResult]: A list of results for each imported image file.
         """
         results = []
         with self.db_session_generator.get_session() as session:
+            files = scan_result.files if scan_result.files else []
+            self.logger.debug(f"Importing {len(files)} image files from scan result.")
             for image_file in scan_result.files:
                 try:
                     image_entity = ImageFileEntity(image_file.model_dump())
@@ -84,6 +100,7 @@ class ImageImporter:
                     session.commit()
                     results.append(
                         ImageImporterResult(
+                            image_id=image_entity.id,
                             success=True,
                             message=f"Imported image file: {image_file.Path.as_posix()}",
                         )
@@ -96,7 +113,7 @@ class ImageImporter:
                     results.append(
                         ImageImporterResult(
                             success=False,
-                            message=f"Failed to import image file: {image_file.Path.as_posix()}",
+                            message=f"Failed to import image file: {image_file.Path.as_posix()}\n---\nError: {str(e)}",
                         )
                     )
         return results

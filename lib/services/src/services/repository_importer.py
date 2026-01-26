@@ -5,6 +5,7 @@
 # endregion
 # region Imports
 from logging import Logger
+from typing import Optional
 from core.database import DatabaseSessionGenerator
 from core.models.repo import RepoEntity, RepoScanResult, Repo
 from pydantic import BaseModel
@@ -27,7 +28,7 @@ class RepoImporter:
     Service for importing and processing repository scan results.
     """
 
-    def __init__(self, db: DatabaseSessionGenerator):
+    def __init__(self, db: DatabaseSessionGenerator, logger: Logger):
         """
         Initializes the RepoImporter with a database session generator and logger.
 
@@ -36,8 +37,9 @@ class RepoImporter:
             logger (Logger): The logger instance for logging.
         """
         self.db_session_generator = db
+        self.logger = logger.getChild("RepoImporter")
 
-    def process_result(self, scan_result: RepoScanResult) -> list[RepoImporterResult]:
+    def upsert_repo_and_files(self, scan_result: RepoScanResult) -> list[RepoImporterResult]:
         """
         Processes the repository scan result and imports repositories into the database.
 
@@ -47,28 +49,7 @@ class RepoImporter:
         Returns:
             list[RepoImporterResult]: A list of results for each imported repository.
         """
+        repo: Optional[Repo] = scan_result.repo if scan_result.repo else None
+        results: list[RepoImporterResult] = scan_result.results if scan_result.results else []
 
-        results = []
         with self.db_session_generator.get_session() as session:
-            for repo in scan_result.repos:
-                try:
-                    repo_entity = RepoEntity(repo.model_dump())
-                    session.add(repo_entity)
-                    session.commit()
-                    results.append(
-                        RepoImporterResult(
-                            success=True,
-                            message=f"Imported repository: {repo.url}",
-                            url=repo.url,
-                        )
-                    )
-                except Exception as e:
-                    self.logger.error(f"Failed to import repository {repo.url}: {e}")
-                    results.append(
-                        RepoImporterResult(
-                            success=False,
-                            message=f"Failed to import repository: {repo.url}. Error: {e}",
-                            url=repo.url,
-                        )
-                    )
-        return results
