@@ -44,7 +44,7 @@ from pydantic import BaseModel
 # endregion
 # region Image Importer Service
 # region Result Models
-class ImporterResult(BaseModel):
+class ImageImporterResult(BaseModel):
     success: bool
     message: str
 
@@ -67,7 +67,7 @@ class ImageImporter:
         self.db_session_generator = db
         self.logger = logger.getChild("ImageImporter")
 
-    def process_result(self, scan_result: ImageScanResult) -> list[ImporterResult]:
+    def process_result(self, scan_result: ImageScanResult) -> list[ImageImporterResult]:
         """
         Processes the image scan result and imports image files into the database.
 
@@ -85,7 +85,7 @@ class ImageImporter:
                     session.add(image_entity)
                     session.commit()
                     results.append(
-                        ImporterResult(
+                        ImageImporterResult(
                             success=True,
                             message=f"Imported image file: {image_file.Path.as_posix()}",
                         )
@@ -96,7 +96,7 @@ class ImageImporter:
                         f"Failed to import image file {image_file.Path.as_posix()}: {e}"
                     )
                     results.append(
-                        ImporterResult(
+                        ImageImporterResult(
                             success=False,
                             message=f"Failed to import image file: {image_file.Path.as_posix()}",
                         )
@@ -105,4 +105,4 @@ class ImageImporter:
 
 
 # endregion
-__all__ = ["ImageImporter", "ImporterResult"]
+__all__ = ["ImageImporter", "ImageImporterResult"]
