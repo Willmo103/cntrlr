@@ -1,3 +1,48 @@
+# region Docstring
+"""
+services.file_importer
+Service for importing various file types and collections into the database.
+Overview:
+    - Provides a unified service for importing different file types (images, videos,
+      repositories, Obsidian vaults) into the persistent storage layer.
+    - Uses generator-based streaming responses to provide real-time status updates
+      during long-running import operations.
+    - Handles deduplication by checking existing records before inserting new ones.
+Contents:
+    - Exceptions:
+        - FileImporterError:
+            Custom exception raised when file import operations fail.
+    - Services:
+        - FileImporterService:
+            Main service class for importing files into the database. Accepts a
+            database session generator and logger for dependency injection.
+            Methods:
+                - import_images(images: list[ImageFile]) -> Generator[StreamingServiceResponse]:
+                    Imports a list of image files, yielding status messages for each.
+                    Skips images that already exist based on their computed ID.
+                - import_videos(videos: list[VideoFile]) -> Generator[StreamingServiceResponse]:
+                    Imports a list of video files, yielding status messages for each.
+                    Skips videos that already exist based on their computed ID.
+                - import_repo(repo: Repo) -> Generator[StreamingServiceResponse]:
+                    Imports a code repository with all its files. Updates existing
+                    repositories with new metadata and last_seen timestamp. Skips
+                    files that already exist in the repository.
+                - import_obsidian_vault(vault: ObsidianVault) -> None:
+                    Imports an Obsidian vault with all its notes. Skips vaults and
+                    notes that already exist based on their IDs.
+Design Notes:
+    - All import methods follow the same pattern: check for existing records by ID,
+      skip if exists (yielding "Conflict" status), otherwise create and commit.
+    - Generator methods yield StreamingServiceResponse objects with status codes:
+      "Initiated", "Created", "Conflict", "Updated".
+    - File IDs are computed properties based on path and content hash (SHA256),
+      ensuring deduplication across imports.
+    - Exceptions are logged with full stack traces before being re-raised as
+      FileImporterError for consistent error handling upstream.
+    - Uses SQLAlchemy session context managers for proper transaction handling.
+"""
+# endregion
+# region Imports
 from logging import Logger as T_Logger
 from typing import Generator
 
