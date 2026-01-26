@@ -51,44 +51,40 @@ Design Notes:
 # endregion
 # region Imports
 
-from .audio_file import AudioFileEntity, AudioFile  # noqa: F401
-from .data_file import DataFileEntity, DataFile  # noqa: F401
-from .image_file import ImageFileEntity, ImageFile  # noqa: F401
-from .video_file import VideoFileEntity, VideoFile  # noqa: F401
-from .sqlite_file import SQLiteFileEntity, SQLiteFile  # noqa: F401
+from .audio_file import AudioFile, AudioFileEntity  # noqa: F401
 from .base import (  # noqa: F401
-    FilePath,
-    BaseFileStat,
-    MacOSFileStat,
-    LinuxFileStat,
-    WindowsFileStat,
-    BaseFileModel,
-    GenericFile,
-    TextFileLine,
-    BaseTextFile,
     BaseDirectory,
+    BaseFileModel,
+    BaseFileStat,
     BaseScanResult,
+    BaseTextFile,
+    FilePath,
+    GenericFile,
+    LinuxFileStat,
+    MacOSFileStat,
+    TextFileLine,
+    WindowsFileStat,
 )
+from .data_file import DataFile, DataFileEntity  # noqa: F401
+from .image_file import ImageFile, ImageFileEntity, ImageScanResult  # noqa: F401
+from .sqlite_file import SQLiteFile, SQLiteFileEntity  # noqa: F401
+from .video_file import VideoFile, VideoFileEntity, VideoScanResult  # noqa: F401
+
 
 # endregion
-# region Entities
-
-__entities__ = [
+# region Exports
+__all__ = [
     "AudioFileEntity",
     "DataFileEntity",
     "ImageFileEntity",
     "VideoFileEntity",
     "SQLiteFileEntity",
-]
-
-# endregion
-# region Pydantic Models
-
-__models__ = [
     "AudioFile",
     "DataFile",
     "ImageFile",
+    "ImageScanResult",
     "VideoFile",
+    "VideoScanResult",
     "SQLiteFile",
     "GenericFile",
     "FilePath",
@@ -102,13 +98,4 @@ __models__ = [
     "BaseDirectory",
     "BaseScanResult",
 ]
-
-# endregion
-# region All Exports
-
-__all__ = [
-    *__entities__,
-    *__models__,
-]
-
 # endregion

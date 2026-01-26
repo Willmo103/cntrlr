@@ -61,6 +61,11 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
 
+from PIL import ExifTags, Image
+from pydantic import Field, field_validator, model_serializer
+from sqlalchemy import JSON, Boolean, Computed, DateTime, Integer, String, Text, func
+from sqlalchemy.orm import Mapped, mapped_column
+
 from core.database import Base
 from core.models.file_system.base import (
     BaseFileModel,
@@ -68,10 +73,6 @@ from core.models.file_system.base import (
     BaseScanResult,
     FilePath,
 )
-from PIL import ExifTags, Image
-from pydantic import Field, field_validator, model_serializer
-from sqlalchemy import JSON, Boolean, Computed, DateTime, Integer, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
 
 
 # endregion
@@ -135,6 +136,8 @@ class ImageFileEntity(Base):
     thumbnail_b64_data: Mapped[Optional[str]] = mapped_column(Text)
     exif_data: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
     is_nsfw: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+
+    # DB Record Timestamps
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         server_default=func.now(), onupdate=func.now()

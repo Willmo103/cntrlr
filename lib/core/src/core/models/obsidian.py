@@ -97,13 +97,6 @@ import json
 from datetime import datetime
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from core.database import Base
-from core.models.file_system.base import (
-    BaseDirectory,
-    BaseFileModel,
-    BaseScanResult,
-    TextFileLine,
-)
 from pydantic import (
     BaseModel,
     Field,
@@ -125,6 +118,15 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column
+
+from core.database import Base
+from core.models.file_system.base import (
+    BaseDirectory,
+    BaseFileModel,
+    BaseScanResult,
+    TextFileLine,
+)
+
 
 # endregion
 # region Constants
@@ -474,9 +476,9 @@ class ObsidianVaultEntity(Base):
 
 
 # endregion
-
-
 # region Pydantic Models
+
+
 class ObsidianNote(BaseFileModel):
     """
     A Pydantic model to represent an Obsidian file.
@@ -704,6 +706,8 @@ class ObsidianVault(BaseDirectory):
 
 # endregion
 # region Scan Result Model
+
+
 class ObsidianScanResult(BaseScanResult):
     """
     A Pydantic model to represent the result of an Obsidian vault scan.

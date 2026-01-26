@@ -35,11 +35,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal, Optional
 
-from core.database import Base
-from core.models.file_system.base import BaseFileModel, BaseFileStat, FilePath
 from pydantic import model_serializer
 from sqlalchemy import Computed, DateTime, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
+
+from core.database import Base
+from core.models.file_system.base import BaseFileModel, BaseFileStat, FilePath
 
 
 # endregion

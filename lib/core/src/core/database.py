@@ -36,9 +36,10 @@ Design Notes:
     access patterns for flexibility in different application contexts.
 """
 
-from core.config import DatabaseSettings
-from sqlalchemy.orm import declarative_base
 from sqlalchemy import engine
+from sqlalchemy.orm import declarative_base
+
+from core.config import DatabaseSettings
 
 
 Base = declarative_base()

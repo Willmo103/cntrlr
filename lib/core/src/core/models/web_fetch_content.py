@@ -39,10 +39,12 @@ Design notes:
 from datetime import datetime
 from typing import List, Optional
 
-from core.database import Base
 from pydantic import BaseModel, ConfigDict, Field, model_serializer
 from sqlalchemy import JSON, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
+
+from core.database import Base
+
 
 # endregion
 

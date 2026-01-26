@@ -54,13 +54,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from core.database import Base
-from core.models.file_system.base import (
-    BaseFileModel,
-    BaseFileStat,
-    BaseScanResult,
-    FilePath,
-)
 from pydantic import Field, field_validator, model_serializer
 from sqlalchemy import (
     JSON,
@@ -74,6 +67,14 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column
+
+from core.database import Base
+from core.models.file_system.base import (
+    BaseFileModel,
+    BaseFileStat,
+    BaseScanResult,
+    FilePath,
+)
 
 
 # endregion

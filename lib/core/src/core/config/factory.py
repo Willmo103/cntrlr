@@ -55,6 +55,7 @@ from pydantic_settings import (
 
 from .base import APP_ENV, APP_ROOT
 
+
 # endregion
 # region FactoryBaseSettings Class
 T = TypeVar("T", bound=BaseSettings)

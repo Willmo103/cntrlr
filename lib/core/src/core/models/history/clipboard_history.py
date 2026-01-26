@@ -35,11 +35,12 @@ Design notes:
 from datetime import datetime
 from typing import Optional
 
-from core.database import Base
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import Boolean, DateTime, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
+
+from core.database import Base
 
 
 # endregion

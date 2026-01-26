@@ -40,12 +40,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Literal, Optional
 
-from core.database import Base
-from core.models.file_system.base import BaseFileModel, BaseFileStat, FilePath
-from core.utils import is_data_file
 from pydantic import Field, model_serializer, model_validator
 from sqlalchemy import JSON, Computed, DateTime, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
+
+from core.database import Base
+from core.models.file_system.base import BaseFileModel, BaseFileStat, FilePath
+from core.utils import is_data_file
 
 
 # endregion

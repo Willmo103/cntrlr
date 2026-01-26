@@ -45,6 +45,7 @@ import os
 from pathlib import Path
 from typing import Literal
 
+
 # endregion
 # region AppEnv Class
 
@@ -107,6 +108,8 @@ APP_ENV: Literal["prod", "docker", "dev"] = AppEnv.environment()
 """[Optional[Literal]] Environment type."""
 TTS_MODELS_DIR: Path = AppEnv.tts_models_dir()
 """[Path] Directory where TTS models are stored."""
+REMOTES_DIR: Path = APP_ROOT / "remotes"
+"""[Path] Directory where remote resources are stored."""
 # endregion
 
 # Debug output in development mode (Makes you check your config early)

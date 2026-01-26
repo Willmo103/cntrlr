@@ -5,16 +5,20 @@
 #     "rich",
 # ]
 # ///
-import sys
-import typer # pyright: ignore[reportMissingImports]
 import subprocess
-
-from rich.console import Console  # pyright: ignore[reportMissingImports]
-from rich.markdown import Markdown # pyright: ignore[reportMissingImports]
-
+import sys
 from pathlib import Path
 
+import typer  # pyright: ignore[reportMissingImports]
+from rich.console import Console  # pyright: ignore[reportMissingImports]
+from rich.markdown import Markdown  # pyright: ignore[reportMissingImports]
+
+
 PACKAGE_ROOT = Path(__file__).parent.parent.resolve()
+LIBRARY_PATHS = {
+    "core": PACKAGE_ROOT.parent / "lib" / "core",
+    "services": PACKAGE_ROOT.parent / "lib" / "services",
+}
 
 console = Console(
     record=True,
@@ -24,26 +28,15 @@ console = Console(
 
 app = typer.Typer(name="dev", help="Development CLI for CNTRLR application.")
 
-def _ensure_venv():
-    """Ensure that the virtual environment is activated."""
-    if not hasattr(sys, 'real_prefix') and (getattr(sys, 'base_prefix', sys.prefix) == sys.prefix):
-        console.print("[bold red]Error:[/bold red] Virtual environment is not activated.")
-        console.print("Please activate the virtual environment before running this script.")
-        typer.Exit(code=1)
-
-def _activate_venv():
-    """Activate the virtual environment."""
-    venv_path = PACKAGE_ROOT / ".venv"
-    if not venv_path.exists():
-        raise EnvironmentError("Virtual environment not found. Please create it first.")
-    activate_script = venv_path / "Scripts" / "activate_this.py" if sys.platform == "win32" else venv_path / "bin" / "activate_this.py"
-    with open(activate_script) as f:
-        exec(f.read(), {'__file__': str(activate_script)})
-
-def _env_info_console_header() -> Console:
-    console = Console()
-    console.rule("[bold blue]CNTRLR Development Environment Info[/bold blue]")
-    return console
 
 @app.command(name="fmt", help="Format the codebase using black and isort.")
 def format_code():
+    """Format the codebase using black and isort."""
+    console.print("[bold green]Formatting code...[/bold green]")
+    subprocess.run(["uv", "run", "isort", str(PACKAGE_ROOT.as_posix())], check=True)
+    subprocess.run(["uv", "run", "black", str(PACKAGE_ROOT.as_posix())], check=True)
+    console.print("[bold green]Code formatting complete.[/bold green]")
+
+
+if __name__ == "__main__":
+    app()

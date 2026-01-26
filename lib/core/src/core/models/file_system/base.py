@@ -70,13 +70,6 @@ from hashlib import sha256
 from pathlib import Path
 from typing import Literal, Optional, Union
 
-from core import settings
-from core.utils import (
-    get_file_sha256,
-    get_file_stat_model,
-    get_mime_type,
-    get_path_model,
-)
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -85,6 +78,15 @@ from pydantic import (
     model_serializer,
     model_validator,
 )
+
+from core import settings
+from core.utils import (
+    get_file_sha256,
+    get_file_stat_model,
+    get_mime_type,
+    get_path_model,
+)
+
 
 # endregion
 # region Base File System Models
@@ -147,17 +149,23 @@ class FilePath(BaseModel):
         /home/user/docs/file.txt
     """
 
-    name: str
-    suffix: str
-    suffixes: list[str]
-    stem: str
-    parent: str
-    parents: list[str]
-    anchor: str
-    drive: str
-    root: str
-    parts: list[str]
-    is_absolute: bool
+    name: str = Field(..., description="The final path component")
+    suffix: str = Field(
+        ..., description="The file extension of the final path component"
+    )
+    suffixes: list[str] = Field(
+        ..., description="A list of all suffixes in the final path component"
+    )
+    stem: str = Field(..., description="The final path component without its suffix")
+    parent: str = Field(..., description="The parent directory of the path")
+    parents: list[str] = Field(..., description="A list of all parent directories")
+    anchor: str = Field(..., description="The part of the path before the directories")
+    drive: str = Field(..., description="The drive letter (Windows only)")
+    root: str = Field(..., description="The root of the path")
+    parts: list[str] = Field(
+        ..., description="A tuple giving access to the path’s various components"
+    )
+    is_absolute: bool = Field(..., description="Whether the path is absolute")
 
     def _path(self) -> Path:
         """

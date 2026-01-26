@@ -25,15 +25,18 @@ Design notes:
 from datetime import datetime
 from typing import Optional
 
-from core.database import Base
 from pydantic import BaseModel, Field
 from sqlalchemy import DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
+from core.database import Base
+
 
 # endregion
 # region Sqlalchemy Model
+
+
 class LogEntryEntity(Base):
     """
     Model representing a system log entry.
@@ -104,6 +107,8 @@ class LogEntryEntity(Base):
 
 # endregion
 # region Pydantic Model
+
+
 class LogEntry(BaseModel):
     """
     Pydantic model representing a system log entry.
@@ -137,5 +142,7 @@ class LogEntry(BaseModel):
             message=self.message,
         )
 
+
+# endregion
 
 __all__ = ["LogEntryEntity"]

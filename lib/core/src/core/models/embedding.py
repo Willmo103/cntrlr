@@ -41,15 +41,19 @@ Design Notes:
 # endregion
 # region Imports
 from typing import Any, Optional
-from core.database import Base
+
 from pgvector.sqlalchemy import VECTOR
 from pydantic import BaseModel, Field
 from sqlalchemy import JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
+from core.database import Base
+
 
 # endregion
 # region Sqlalchemy Model
+
+
 class EmbeddingEntity(Base):
     """
     Model representing a text embedding vector.
@@ -124,6 +128,8 @@ class EmbeddingEntity(Base):
 
 # endregion
 # region Pydantic Model
+
+
 class Embedding(BaseModel):
     """
     Pydantic model representing a text embedding vector.

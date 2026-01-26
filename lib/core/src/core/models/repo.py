@@ -65,7 +65,9 @@ Design notes:
 # endregion
 # region Imports
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_serializer
 from sqlalchemy import (
     DDL,
@@ -77,23 +79,25 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
-    func,
     event,
+    func,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-
+from core.config.base import REMOTES_DIR
 from core.database import Base
 from core.models.file_system.base import (
     BaseDirectory,
+    BaseScanResult,
     BaseTextFile,
     TextFileLine,
-    BaseScanResult,
 )
 
 
 # endregion
 # region Pydantic Models for Git Metadata
+
+
 class GitCommit(BaseModel):
     """Schema for git commit information."""
 
@@ -123,6 +127,8 @@ class GitMetadata(BaseModel):
 
 # endregion
 # region SQLAlchemy Models and Pydantic Models for Repos
+
+
 class RepoEntity(Base):
     """
     Base model for a repository.
@@ -410,9 +416,9 @@ class RepoFileLineEntity(Base):
 
 
 # endregion
-
-
 # region Pydantic Models for Repos
+
+
 class RepoFile(BaseTextFile):
     """
     A Pydantic model to represent a file in a repository.
@@ -511,18 +517,27 @@ class Repo(BaseDirectory):
     def validate_git_metadata(
         cls, v: Union[GitMetadata, dict[str, Any], None]
     ) -> Optional[GitMetadata]:
+        """
+        Validator for 'git_metadata' field to ensure it is a GitMetadata instance.
+        """
         if isinstance(v, dict):
             return GitMetadata.model_validate(v)
         return v
 
     @field_validator("type", mode="before")
     def validate_type(cls, v: Union[str, None]) -> Optional[str]:
+        """
+        Validator for 'type' field to ensure it is either 'local' or 'cloned'.
+        """
         if v not in {"local", "cloned"}:
             raise ValueError(f"Invalid repo type: {v}")
         return v
 
     @field_validator("url", mode="before")
     def validate_url(cls, v: Union[str, None]) -> Optional[str]:
+        """
+        Validator for 'url' field to ensure it is a valid URL or None.
+        """
         if v is not None and not isinstance(v, str):
             raise ValueError("URL must be a string or None")
         if v is not None and not v.startswith(("http://", "https://", "git@")):
@@ -533,6 +548,9 @@ class Repo(BaseDirectory):
     def validate_files_type(
         cls, v: Union[List[RepoFile], List[dict[str, Any]]]
     ) -> List[RepoFile]:
+        """
+        Validator for 'files' field to ensure it is a list of RepoFile instances.
+        """
         if all(isinstance(item, dict) for item in v):
             return [RepoFile.model_validate(item) for item in v]
         return v
@@ -542,8 +560,40 @@ class Repo(BaseDirectory):
         """Return all documentation files in the repository."""
         return [file for file in self.files if file.suffix in {".md", ".rst", ".txt"}]
 
+    @property
+    def name(self) -> str:
+        """
+        Return the name of the repository derived from the path.
+        """
+        return self.path_json.stem
+
+    @property
+    def commits(self) -> List[GitCommit]:
+        """
+        Return the commit history from git_metadata.
+        """
+        if self.git_metadata and self.git_metadata.commit_history:
+            return self.git_metadata.commit_history
+        return []
+
+    @property
+    def repo_root(self) -> Path:
+        """
+        Return the root path of the repository based on its type.
+        """
+        if self.type == "local":
+            return self.Path
+        elif self.type == "cloned":
+            return REMOTES_DIR / self.name
+
+    @property
+    def exists(self) -> bool:
+        """
+        Check if the repository root path exists in the filesystem.
+        """
+        return self.repo_root.exists()
+
     model_config = ConfigDict(
-        arbitrary_types_allowed=True,
         from_attributes=True,
     )
 

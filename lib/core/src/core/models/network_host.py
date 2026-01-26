@@ -1,3 +1,4 @@
+# region Docstring
 """
 core.models.network_host
 Persistence and domain models for indexing and working with network hosts.
@@ -25,23 +26,24 @@ Design notes:
 - Equality comparison on NetworkHostEntity is based on IP address or MAC address matching,
     reflecting that either can uniquely identify a network host.
 - The model uses ConfigDict with from_attributes=True to enable ORM mode compatibility.
-
 """
-
+# endregion
 # region Imports
 from datetime import datetime
 from typing import Optional
 
-from core.config import field_validator
-from core.database import Base
 from pydantic import BaseModel, ConfigDict, Field, field_serializer
 from sqlalchemy import DateTime, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
+from core.config import field_validator
+from core.database import Base
+
+
 # endregion
-
-
 # region SQLAlchemy Model
+
+
 class NetworkHostEntity(Base):
     """
     Model representing a network host.
@@ -118,9 +120,9 @@ class NetworkHostEntity(Base):
 
 
 # endregion
-
-
 # region Pydantic Model
+
+
 class NetworkHost(BaseModel):
     """
     Database schema for a network host.
