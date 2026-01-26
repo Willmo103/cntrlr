@@ -16,6 +16,15 @@ from core.models.file_system.sqlite_file import SQLiteFile
 from core.models.file_system.video_file import VideoFile
 
 
+from pathlib import Path
+from typing import Optional
+
+import git
+
+from core.models.repo import GitCommit
+from core.models.repo import GitMetadata
+
+
 def is_markdown_formattable(path: Path) -> bool:
     """Check if the given path has a markdown file extension.
 
@@ -476,6 +485,126 @@ def AudioFileModel_from_Path(file_path: Path) -> "AudioFile":  # type: ignore  #
         >>> Error: NotImplementedError("This function is not yet implemented.")
     """
     raise NotImplementedError("This function is not yet implemented.")
+
+
+def get_git_metadata(repo_path: Path) -> GitMetadata | None:
+    """Extract git metadata from repository."""
+    if not (repo_path / ".git").exists() or not repo_path.is_dir():
+        return None
+    try:
+        repo = git.Repo(repo_path)
+
+        # Get remotes
+        remotes = {remote.name: remote.url for remote in repo.remotes}
+
+        # Get current branch
+        try:
+            current_branch = repo.active_branch.name
+        except TypeError:
+            current_branch = "HEAD (detached)"
+
+        # Get all branches
+        branches = [branch.name for branch in repo.branches]
+
+        # Get commit info
+        try:
+            latest_commit = repo.head.commit
+            commit_info = GitCommit(
+                hash=latest_commit.hexsha[:8],
+                message=latest_commit.message.strip(),
+                author=str(latest_commit.author),
+                date=latest_commit.committed_datetime.isoformat(),
+            )
+        except Exception:
+            commit_info = {"error": "Unable to get commit info"}
+
+        # Check for uncommitted changes
+        is_dirty = repo.is_dirty()
+        untracked_files = len(repo.untracked_files)
+
+        return GitMetadata(
+            remotes=remotes,
+            current_branch=current_branch,
+            branches=branches,
+            latest_commit=commit_info,
+            uncommitted_changes=is_dirty,
+            untracked_files=untracked_files,
+            commit_history=get_all_commits(repo_path, max_count=10) or [],
+        )
+    except Exception as e:
+        return None
+
+
+def get_latest_commit(repo_path: Path) -> GitCommit | None:
+    """Get the latest commit information from the git repository."""
+    if not (repo_path / ".git").exists() or not repo_path.is_dir():
+        return None
+    try:
+        repo = git.Repo(repo_path)
+        latest_commit = repo.head.commit
+        return GitCommit(
+            hash=latest_commit.hexsha[:8],
+            message=latest_commit.message.strip(),
+            author=str(latest_commit.author),
+            date=latest_commit.committed_datetime.isoformat(),
+        )
+    except Exception:
+        return None
+
+
+def get_all_commits(repo_path: Path, max_count: int = 10) -> list[GitCommit] | None:
+    """Get a list of commits from the git repository."""
+    if not (repo_path / ".git").exists() or not repo_path.is_dir():
+        return None
+    try:
+        repo = git.Repo(repo_path)
+        commits = []
+        for commit in repo.iter_commits(max_count=max_count):
+            commits.append(
+                GitCommit(
+                    hash=commit.hexsha[:8],
+                    message=commit.message.strip(),
+                    author=str(commit.author),
+                    date=commit.committed_datetime.isoformat(),
+                )
+            )
+        return commits
+    except Exception:
+        return None
+
+
+def get_repo_name(repo_path: Path) -> str | None:
+    """Get the repository name from the git repository."""
+    if not (repo_path / ".git").exists() or not repo_path.is_dir():
+        return None
+    try:
+        repo = git.Repo(repo_path)
+        return repo.working_tree_dir.split("/")[-1]
+    except Exception:
+        return None
+
+
+def clone_repository(
+    repo_url: str, clone_path: Path, branch: Optional[str] = None
+) -> Path:
+    """Clone a git repository to the specified or temporary path.
+    Args:
+        repo_url (str): The URL of the git repository to clone.
+        clone_path (Path): The local path to clone the repository into. If None, a temporary directory is used.
+        branch: (Optional) The branch to clone. If None, the default branch is used.
+    Raises:
+        Exception: If cloning fails.
+    Returns:
+        Path: The path to the cloned repository.
+    """
+    try:
+        if branch:
+            git.Repo.clone_from(repo_url, clone_path, branch=branch)
+        else:
+            git.Repo.clone_from(repo_url, clone_path)
+        return clone_path
+    except Exception as e:
+        raise Exception(f"Failed to clone repository: {e}")
 
 
 # endregion

@@ -233,8 +233,12 @@ class SQLiteFile(BaseFileModel):
     tables: Optional[List[str]] = None
     schema: Optional[str] = None
 
-    def populate(self, file_path: Path) -> None:
+    @classmethod
+    def populate(cls, file_path: Path) -> "SQLiteFile":
         super().populate(file_path)
+        # SQLite-specific population logic can be added here if needed
+        cls.content = file_path.read_text(encoding="utf-8", errors="ignore")
+        return cls
 
     @model_serializer("json")
     def serialize_model(self) -> dict:

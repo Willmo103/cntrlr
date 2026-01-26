@@ -197,11 +197,13 @@ class AudioFile(BaseFileModel):
     transcript_json: Optional[dict[str, Any]] = None
     video_id: Optional[int] = None  # If the audio is extracted from a video file
 
-    def populate(self, file_path: Path) -> None:
+    @classmethod
+    def populate(cls, file_path: Path) -> "AudioFile":
         super().populate(file_path)
-        self.duration = None
-        self.transcript = None
-        self.video_id = None
+        cls.duration = None
+        cls.transcript = None
+        cls.video_id = None
+        return cls
 
         # TODO: Populate duration using audio processing libraries like pydub or librosa.
 

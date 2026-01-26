@@ -650,7 +650,8 @@ class BaseFileModel(BaseModel):
     def is_empty(self) -> bool:
         return self.stat_json.st_size == 0
 
-    def populate(self, file_path: Path) -> None:
+    @classmethod
+    def populate(cls, file_path: Path) -> None:
         """
         Populate the model attributes based on the given file path.
 
@@ -660,11 +661,19 @@ class BaseFileModel(BaseModel):
         Returns:
             None
         """
+        if not file_path.exists() or not file_path.is_file():
+            raise FileNotFoundError(f"File not found: {file_path}")
 
-        self.sha256 = get_file_sha256(file_path)
-        self.stat_json = get_file_stat_model(file_path)
-        self.path_json = get_path_model(file_path)
-        self.mime_type = get_mime_type(file_path)
+        cls.sha256 = get_file_sha256(file_path)
+        cls.stat_json = get_file_stat_model(file_path)
+        cls.path_json = get_path_model(file_path)
+        cls.mime_type = get_mime_type(file_path)
+        cls.tags = []
+        cls.short_description = None
+        cls.long_description = None
+        cls.frozen = False
+
+        return cls
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
@@ -764,6 +773,14 @@ class TextFileLine(BaseModel):
         None, description="SHA256 hash of the line content for deduplication"
     )
 
+    @model_validator(mode="after")
+    def compute_content_hash(self) -> "TextFileLine":
+        """
+        Compute the SHA256 hash of the line content for deduplication.
+        """
+        self.content_hash = sha256(self.content.encode()).hexdigest()
+        return self
+
     @property
     def is_empty(self) -> bool:
         """Check if the line is empty or consists only of whitespace."""
@@ -795,19 +812,21 @@ class BaseTextFile(BaseFileModel):
     content: Optional[str] = None
     lines_json: Optional[list[TextFileLine]] = []
 
-    def populate(self, file_path: Path) -> None:
-        super().populate(file_path)
+    @classmethod
+    def populate(cls, file_path: Path) -> None:
+        super(cls).populate(file_path)
         with file_path.open("r", encoding="utf-8", errors="ignore") as f:
             lines = f.readlines()
-            self.content = "".join(lines).replace("\x00", "")
-            self.lines_json = [
+            cls.content = "".join(lines).replace("\x00", "")
+            cls.lines_json = [
                 TextFileLine(
-                    file_id=self.path_json.id,
-                    content=line.rstrip("\n"),
+                    file_id=cls.path_json.id,
+                    content=line.rstrip("\n").rstrip("\r"),
                     line_number=i + 1,
                 )
                 for i, line in enumerate(lines)
             ]
+        return cls
 
     @model_serializer(when_used="json")
     def serialize_model(self) -> dict:

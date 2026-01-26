@@ -332,17 +332,20 @@ class VideoFile(BaseFileModel):
         width, height = map(int, resolution_str.split("x"))
         return width, height
 
-    def populate(self, file_path: Path) -> None:
+    @classmethod
+    def populate(cls, file_path: Path) -> "VideoFile":
         """Populate video-specific metadata using ffmpeg."""
+        super().populate(file_path)
         try:
-            self.duration = self._get_video_duration(file_path)
-            self.codec = self._get_video_codec(file_path)
-            self.width, self.height = self._get_video_resolution(file_path)
-            if self.width and self.height:
-                self.resolution = (self.width, self.height)
+            cls.duration = cls._get_video_duration(file_path)
+            cls.codec = cls._get_video_codec(file_path)
+            cls.width, cls.height = cls._get_video_resolution(file_path)
+            if cls.width and cls.height:
+                cls.resolution = (cls.width, cls.height)
         except Exception as e:
             # Handle exceptions (e.g., ffprobe not found, invalid file)
             raise Exception(f"Error populating video metadata: {e}")
+        return cls
 
     @property
     def entity(self) -> VideoFile_Table:

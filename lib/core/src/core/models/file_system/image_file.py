@@ -260,13 +260,24 @@ class ImageFile(BaseFileModel):
     """
 
     type: Literal["image"] = "image"
-    b64_data: Optional[str] = None
-    thumbnail_b64_data: Optional[str] = None
-    exif_data: dict[str, Any] = {}
-    fmt: Optional[str] = None
-    is_nsfw: Optional[bool] = False
+    b64_data: Optional[str] = Field(
+        None, description="Base64 encoded string of the full image"
+    )
+    thumbnail_b64_data: Optional[str] = Field(
+        None, description="Base64 encoded string of the thumbnail image"
+    )
+    exif_data: dict[str, Any] = Field(
+        {}, description="EXIF metadata extracted from the image"
+    )
+    fmt: Optional[str] = Field(
+        None, description="The image format (e.g., 'jpeg', 'png')"
+    )
+    is_nsfw: Optional[bool] = Field(
+        False, description="Flag indicating if the image is NSFW. DEFAULT: False"
+    )
 
-    def populate(self, file_path: Path, thumbnail_size: tuple = (512, 512)) -> None:
+    @classmethod
+    def populate(cls, file_path: Path, thumbnail_size: tuple = (512, 512)) -> None:
         """
         Populate the model attributes based on the given image file path.
 
@@ -281,12 +292,12 @@ class ImageFile(BaseFileModel):
 
         try:
             img = Image.open(file_path)
-            self.fmt = img.format.lower() if img.format else "unknown"
+            cls.fmt = img.format.lower() if img.format else "unknown"
 
             # Encode full image to base64
             buffered = BytesIO()
             img.save(buffered, format=img.format)
-            self.b64_data = base64.b64encode(buffered.getvalue()).decode("utf-8")
+            cls.b64_data = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
             # copy the image for modifications
             img_copy = img.copy()
@@ -308,33 +319,33 @@ class ImageFile(BaseFileModel):
             # Encode thumbnail to base64
             thumb_buffered = BytesIO()
             img_copy.save(thumb_buffered, format=img.format)
-            self.thumbnail_b64_data = base64.b64encode(
-                thumb_buffered.getvalue()
-            ).decode("utf-8")
+            cls.thumbnail_b64_data = base64.b64encode(thumb_buffered.getvalue()).decode(
+                "utf-8"
+            )
             try:
                 exif = img.getexif()
                 if exif:
-                    self.exif_data = {
+                    cls.exif_data = {
                         ExifTags.TAGS.get(tag, tag): value
                         for tag, value in exif.items()
                     }
                     # Some exif values are bytes, decode them if possible
-                    for key, value in self.exif_data.items():
+                    for key, value in cls.exif_data.items():
                         if isinstance(value, bytes):
                             try:
-                                self.exif_data[key] = value.decode(
+                                cls.exif_data[key] = value.decode(
                                     "utf-8", errors="ignore"
                                 )
                             except Exception:
                                 try:
                                     # I know some of them use unicode encoding
-                                    self.exif_data[key] = value.decode(
+                                    cls.exif_data[key] = value.decode(
                                         "unicode_escape", errors="ignore"
                                     )
                                 except Exception:
                                     # try latin-1 as last resort
                                     try:
-                                        self.exif_data[key] = value.decode(
+                                        cls.exif_data[key] = value.decode(
                                             "latin-1", errors="ignore"
                                         )
                                     except Exception:
@@ -344,6 +355,7 @@ class ImageFile(BaseFileModel):
 
         except Exception as e:
             print(f"Error extracting EXIF data from image file {file_path}: {e}")
+        return cls
 
     @property
     def html_thumbnail_tag(self) -> Optional[str]:

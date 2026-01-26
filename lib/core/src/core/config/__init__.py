@@ -595,6 +595,12 @@ class AppSettings(FactoryBaseSettings):
         """Base directory for remote files."""
         return self.app_root / "remotes"
 
+    @property
+    def db(self) -> Database:
+        """SQLite database instance for application caching."""
+        db_path = self.app_root / "cntrlr.db"
+        return Database(db_path)
+
     @field_validator("tz", mode="before")
     def parse_timezone(cls, v: Any) -> Any:
         if isinstance(v, str):
