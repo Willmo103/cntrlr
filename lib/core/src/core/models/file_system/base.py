@@ -713,6 +713,17 @@ class BaseDirectory(BaseModel):
             "frozen": self.frozen,
         }
 
+    @property
+    def name(self) -> str:
+        """
+        Return the name of the repository derived from the path.
+        """
+        return self.path_json.stem
+
+    @property
+    def id(self) -> str:
+        return sha256(f"{self.name}{self.Path.as_posix()}".encode()).hexdigest()
+
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
     )

@@ -168,8 +168,8 @@ class RepoEntity(Base):
     git_metadata: Mapped[Optional[dict]] = mapped_column(String, nullable=True)
     last_seen: Mapped[Optional[datetime]] = mapped_column(String(30), nullable=True)
 
-    files: Mapped[List["RepoFileEntity"]] = mapped_column(
-        ForeignKey("repo_files.repo_id"), default=[]
+    files: Mapped[List["RepoFileEntity"]] = Computed(
+        "SELECT * FROM repo_files WHERE repo_id = id", persisted=False
     )
 
     # DB Record Timestamps
@@ -447,6 +447,26 @@ class RepoFile(BaseTextFile):
     )
     repo_id: Optional[str] = Field(..., description="The ID of the repository")
 
+    @property
+    def entity(self) -> RepoFileEntity:
+        """Return the SQLAlchemy entity representation of the RepoFile."""
+        return RepoFileEntity(
+            id=self.id,
+            repo_id=self.repo_id,
+            sha256=self.sha256,
+            path_json=self.path_json,
+            stat_json=self.stat_json,
+            mime_type=self.mime_type,
+            tags=self.tags,
+            short_description=self.short_description,
+            long_description=self.long_description,
+            frozen=self.frozen,
+            content=self.content,
+            repo_path=self.repo_path,
+            lines_json=self.lines_json,
+        )
+
+    @model_serializer("json")
     def serialize_model(self) -> dict:
         return {
             **super().model_dump(),
@@ -497,6 +517,7 @@ class Repo(BaseDirectory):
             "git_metadata": (
                 self.git_metadata.model_dump() if self.git_metadata else None
             ),
+            "last_seen": self.last_seen.isoformat() if self.last_seen else None,
         }
 
     @field_validator("files", mode="before")
@@ -561,13 +582,6 @@ class Repo(BaseDirectory):
         return [file for file in self.files if file.suffix in {".md", ".rst", ".txt"}]
 
     @property
-    def name(self) -> str:
-        """
-        Return the name of the repository derived from the path.
-        """
-        return self.path_json.stem
-
-    @property
     def commits(self) -> List[GitCommit]:
         """
         Return the commit history from git_metadata.
@@ -592,6 +606,32 @@ class Repo(BaseDirectory):
         Check if the repository root path exists in the filesystem.
         """
         return self.repo_root.exists()
+
+    @property
+    def entity(self) -> RepoEntity:
+        """Return the SQLAlchemy entity representation of the repository."""
+        return RepoEntity(
+            id=self.id,
+            stat_json=self.stat_json.model_dump(),
+            path_json=self.path_json.model_dump(),
+            tags=self.tags,
+            short_description=self.short_description,
+            long_description=self.long_description,
+            frozen=self.frozen,
+            type=self.type,
+            url=self.url,
+            git_metadata=(
+                self.git_metadata.model_dump() if self.git_metadata else None
+            ),
+            last_seen=self.last_seen,
+            created_at=self.created_at,
+            updated_at=self.updated_at,
+        )
+
+    @property
+    def file_entities(self) -> List[RepoFileEntity]:
+        """Return the list of SQLAlchemy entity representations of the repository files."""
+        return [file.entity for file in self.files]
 
     model_config = ConfigDict(
         from_attributes=True,
