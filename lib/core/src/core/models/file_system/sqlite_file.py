@@ -240,7 +240,7 @@ class SQLiteFile(BaseFileModel):
         # SQLite-specific population logic can be added here if needed
         schema = get_sqlite_schema(file_path)
         tables = get_sqlite_tables(file_path)
-        instance.schema = schema
+        instance.db_schema = schema
         instance.tables = tables
         return instance
 

@@ -14,8 +14,7 @@ def temp_dir_path(tmp_path_factory) -> fs.BaseDirectory:
 def test_markdown_file_path(tmp_path_factory) -> fs.BaseTextFile:
     """Create a temporary markdown file for testing."""
     md_path = tmp_path_factory.mktemp("test_markdown") / "test_file.md"
-    md_path.write_text(
-        """
+    md_path.write_text("""
 # Test Markdown File
 
 This is a sample markdown file for testing purposes.
@@ -30,8 +29,7 @@ This is a sample markdown file for testing purposes.
 def hello_world():
     print("Hello, World!")
 ```
-    """
-    )
+    """)
     return fs.BaseTextFile.populate(Path(md_path))
 
 
@@ -49,15 +47,9 @@ def test_image_file_path(tmp_path_factory) -> fs.ImageFile:
 
 
 @pytest.fixture(scope="module")
-def test_video_file_path(tmp_path_factory) -> fs.VideoFile:
+def test_video_file_path() -> fs.VideoFile:
     """Create a temporary video file for testing."""
-    video_path = tmp_path_factory.mktemp("test_videos") / "test_video.mp4"
-    video_path.write_bytes(
-        b"\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isomavc1"
-        b"\x00\x00\x00\x08free\x00\x00\x02\xd8mdat"
-        b"\x00\x00\x00\x01\x00\x01\xe0\x00\x00\x00\x01"
-        b"\x68\x64\x72o\x00\x00\x00\x00\x00\x00\x00\x01"
-    )
+    video_path = "C:/src/cntrlr/lib/core/.private/test_video.mp4"
     return fs.VideoFile.populate(Path(video_path))
 
 
@@ -77,15 +69,13 @@ def test_sqlite_file_path(tmp_path_factory) -> fs.SQLiteFile:
 
     conn = sqlite3.connect(sqlite_path)
     cursor = conn.cursor()
-    cursor.execute(
-        """
+    cursor.execute("""
         CREATE TABLE users (
             id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
             age INTEGER NOT NULL
         )
-        """
-    )
+        """)
     cursor.executemany(
         "INSERT INTO users (name, age) VALUES (?, ?)",
         [("Alice", 30), ("Bob", 25), ("Charlie", 35)],
@@ -113,10 +103,11 @@ def test_file_system_setup(
     test_generic_file_path,
 ):
     """Test that the file system fixtures are set up correctly."""
-    assert temp_dir_path.path.exists()
-    assert test_markdown_file_path.path.exists()
-    assert test_image_file_path.path.exists()
-    assert test_video_file_path.path.exists()
-    assert test_data_file_path.path.exists()
-    assert test_sqlite_file_path.path.exists()
-    assert test_generic_file_path.path.exists()
+    tmp_dir = temp_dir_path.Path
+    assert tmp_dir.exists()
+    assert test_markdown_file_path.Path.exists()
+    assert test_image_file_path.Path.exists()
+    assert test_video_file_path.Path.exists()
+    assert test_data_file_path.Path.exists()
+    assert test_sqlite_file_path.Path.exists()
+    assert test_generic_file_path.Path.exists()

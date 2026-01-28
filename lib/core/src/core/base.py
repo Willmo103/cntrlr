@@ -690,7 +690,7 @@ class BaseDirectory(BaseModel):
     )
 
     @property
-    def Path(self) -> Union[str, Path]:
+    def Path(self) -> Path:
         return self.path_json.Path
 
     @model_serializer(when_used="json")
@@ -738,14 +738,15 @@ class BaseDirectory(BaseModel):
             raise NotADirectoryError(f"Not a directory: {dir_path}")
         if not issubclass(cls, BaseDirectory):
             raise TypeError("cls must be a subclass of BaseDirectory")
-        cls.stat_json = get_file_stat_model(dir_path)
-        cls.path_json = get_path_model(dir_path)
-        cls.tags = []
-        cls.short_description = None
-        cls.long_description = None
-        cls.frozen = False
-
-        return cls
+        instance = cls(
+            stat_json=get_file_stat_model(dir_path),
+            path_json=get_path_model(dir_path),
+            tags=[],
+            short_description=None,
+            long_description=None,
+            frozen=False,
+        )
+        return instance
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
