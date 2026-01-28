@@ -2,99 +2,67 @@ from pathlib import Path
 from core.models import file_system as fs
 import pytest
 
+TEST_DATA_FOLDER = Path(__file__).parent / "test_data"
+TEST_MP3_FILE = TEST_DATA_FOLDER / "file_example_MP3_700KB.mp3"
+TEST_MP4_FILE = TEST_DATA_FOLDER / "file_example_MP4_480_1_5MG.mp4"
+TEST_SQLITE_FILE = TEST_DATA_FOLDER / "file_example_SQLITE.db"
+TEST_PNG_FILE = TEST_DATA_FOLDER / "file_example_PNG_500kB.png"
+TEST_MARKDOWN_FILE = TEST_DATA_FOLDER / "file_example_MARKDOWN.md"
+TEST_CSV_FILE = TEST_DATA_FOLDER / "file_example_CSV.csv"
+TEST_GENERIC_FILE = TEST_DATA_FOLDER / "file_example_GENERIC.bin"
+
 
 @pytest.fixture(scope="module")
-def temp_dir_path(tmp_path_factory) -> fs.BaseDirectory:
-    """Create a temporary directory for file system tests."""
-    dir_path = tmp_path_factory.mktemp("test_dir")
-    return fs.BaseDirectory.populate(Path(dir_path))
+def test_dir_path() -> fs.BaseDirectory:
+    """Create a temporary directory for testing."""
+    folder = TEST_DATA_FOLDER
+    return fs.BaseDirectory.populate(Path(folder))
 
 
 @pytest.fixture(scope="module")
-def test_markdown_file_path(tmp_path_factory) -> fs.BaseTextFile:
+def test_markdown_file_path() -> fs.BaseTextFile:
     """Create a temporary markdown file for testing."""
-    md_path = tmp_path_factory.mktemp("test_markdown") / "test_file.md"
-    md_path.write_text("""
-# Test Markdown File
-
-This is a sample markdown file for testing purposes.
-
-**Ipsums Delor:**
-
-- Item 1
-- Item 2
-- Item 3
-
-```python
-def hello_world():
-    print("Hello, World!")
-```
-    """)
+    md_path = TEST_MARKDOWN_FILE
     return fs.BaseTextFile.populate(Path(md_path))
 
 
 @pytest.fixture(scope="module")
-def test_image_file_path(tmp_path_factory) -> fs.ImageFile:
+def test_image_file_path() -> fs.ImageFile:
     """Create a temporary image file for testing."""
-    image_path = tmp_path_factory.mktemp("test_images") / "test_image.png"
-    image_path.write_bytes(
-        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01"
-        b"\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00"
-        b"\x00\x00\nIDATx\x9cc`\x00\x00\x00\x02\x00\x01"
-        b"\x0d\n\x2d\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
-    )
+    image_path = TEST_PNG_FILE
     return fs.ImageFile.populate(Path(image_path))
 
 
 @pytest.fixture(scope="module")
 def test_video_file_path() -> fs.VideoFile:
     """Create a temporary video file for testing."""
-    video_path = "C:/src/cntrlr/lib/core/.private/test_video.mp4"
+    video_path = TEST_MP4_FILE
     return fs.VideoFile.populate(Path(video_path))
 
 
 @pytest.fixture(scope="module")
-def test_data_file_path(tmp_path_factory) -> fs.DataFile:
+def test_data_file_path() -> fs.DataFile:
     """Create a temporary data file for testing."""
-    data_path = tmp_path_factory.mktemp("test_data") / "test_data.csv"
-    data_path.write_text("id,name,age\n" "1,Alice,30\n" "2,Bob,25\n" "3,Charlie,35\n")
+    data_path = TEST_CSV_FILE
     return fs.DataFile.populate(Path(data_path))
 
 
 @pytest.fixture(scope="module")
-def test_sqlite_file_path(tmp_path_factory) -> fs.SQLiteFile:
+def test_sqlite_file_path() -> fs.SQLiteFile:
     """Create a temporary SQLite file for testing."""
-    sqlite_path = tmp_path_factory.mktemp("test_sqlite") / "test_db.sqlite"
-    import sqlite3
-
-    conn = sqlite3.connect(sqlite_path)
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE users (
-            id INTEGER PRIMARY KEY,
-            name TEXT NOT NULL,
-            age INTEGER NOT NULL
-        )
-        """)
-    cursor.executemany(
-        "INSERT INTO users (name, age) VALUES (?, ?)",
-        [("Alice", 30), ("Bob", 25), ("Charlie", 35)],
-    )
-    conn.commit()
-    conn.close()
+    sqlite_path = TEST_SQLITE_FILE
     return fs.SQLiteFile.populate(Path(sqlite_path))
 
 
 @pytest.fixture(scope="module")
-def test_generic_file_path(tmp_path_factory) -> fs.GenericFile:
+def test_generic_file_path() -> fs.GenericFile:
     """Create a temporary generic file for testing."""
-    generic_path = tmp_path_factory.mktemp("test_generic") / "test_file.bin"
-    generic_path.write_bytes(b"\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09")
+    generic_path = TEST_GENERIC_FILE
     return fs.GenericFile.populate(Path(generic_path))
 
 
 def test_file_system_setup(
-    temp_dir_path,
+    test_dir_path,
     test_markdown_file_path,
     test_image_file_path,
     test_video_file_path,
@@ -103,7 +71,7 @@ def test_file_system_setup(
     test_generic_file_path,
 ):
     """Test that the file system fixtures are set up correctly."""
-    tmp_dir = temp_dir_path.Path
+    tmp_dir = test_dir_path.Path
     assert tmp_dir.exists()
     assert test_markdown_file_path.Path.exists()
     assert test_image_file_path.Path.exists()
@@ -133,6 +101,16 @@ def test_file_types(
 def test_sqlite_file_contents(test_sqlite_file_path):
     """Test that the SQLite file contents are correctly read."""
     sqlite_file = test_sqlite_file_path
+    # check basemodel attributes
+    assert sqlite_file.path_json is not None
+    assert sqlite_file.stat_json is not None
+    assert sqlite_file.sha256 is not None
+    assert sqlite_file.mime_type == "application/vnd.sqlite3"
+    # check metadata attributes
+    assert sqlite_file.short_description is None
+    assert sqlite_file.long_description is None
+    assert sqlite_file.tags == []
+    # check sqlite-specific attributes
     assert sqlite_file.db_schema is not None
     assert "users" in sqlite_file.tables
 
@@ -140,6 +118,15 @@ def test_sqlite_file_contents(test_sqlite_file_path):
 def test_markdown_file_contents(test_markdown_file_path):
     """Test that the Markdown file contents are correctly read."""
     md_file = test_markdown_file_path
+    assert md_file.path_json is not None
+    assert md_file.stat_json is not None
+    assert md_file.sha256 is not None
+    assert md_file.mime_type == "text/markdown"
+    # check metadata attributes
+    assert md_file.short_description is None
+    assert md_file.long_description is None
+    assert md_file.tags == []
+    # check sqlite-specific attributes
     content = md_file.content
     assert "# Test Markdown File" in content
     assert "def hello_world():" in content
@@ -148,5 +135,67 @@ def test_markdown_file_contents(test_markdown_file_path):
 def test_image_file_contents(test_image_file_path):
     """Test that the image file contents are correctly read."""
     img_file = test_image_file_path
+    assert img_file.path_json is not None
+    assert img_file.stat_json is not None
+    assert img_file.sha256 is not None
+    assert img_file.mime_type == "image/png"
+    # check metadata attributes
+    assert img_file.short_description is None
+    assert img_file.long_description is None
+    assert img_file.tags == []
+    # check sqlite-specific attributes
     content = img_file.b64_data
-    assert content.startswith(b"\x89PNG")
+    assert content is not None
+    assert len(content) > 0
+
+
+def test_video_file_contents(test_video_file_path):
+    """Test that the video file contents are correctly read."""
+    vid_file = test_video_file_path
+    assert vid_file.path_json is not None
+    assert vid_file.stat_json is not None
+    assert vid_file.sha256 is not None
+    assert vid_file.mime_type == "video/mp4"
+    # check metadata attributes
+    assert vid_file.short_description is None
+    assert vid_file.long_description is None
+    assert vid_file.tags == []
+    # check sqlite-specific attributes
+    content = vid_file
+    assert content.height > 0
+    assert content.width > 0
+    assert content.duration > 0
+
+
+def test_data_file_contents(test_data_file_path):
+    """Test that the data file contents are correctly read."""
+    data_file = test_data_file_path
+    assert data_file.path_json is not None
+    assert data_file.stat_json is not None
+    assert data_file.sha256 is not None
+    assert data_file.mime_type == "application/vnd.ms-excel"
+    # check metadata attributes
+    assert data_file.short_description is None
+    assert data_file.long_description is None
+    assert data_file.tags == []
+    # check sqlite-specific attributes
+    content = data_file.content
+    assert "id,name,age" in content
+    assert "Alice" in content
+    assert "Bob" in content
+
+
+def test_generic_file_contents(test_generic_file_path):
+    """Test that the generic file contents are correctly read."""
+    generic_file = test_generic_file_path
+    assert generic_file.path_json is not None
+    assert generic_file.stat_json is not None
+    assert generic_file.sha256 is not None
+    assert generic_file.mime_type == "application/octet-stream"
+    # check metadata attributes
+    assert generic_file.short_description is None
+    assert generic_file.long_description is None
+    assert generic_file.tags == []
+    # check sqlite-specific attributes
+    assert generic_file.stat_json is not None
+    assert generic_file.path_json is not None
