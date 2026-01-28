@@ -61,6 +61,13 @@ def test_generic_file_path() -> fs.GenericFile:
     return fs.GenericFile.populate(Path(generic_path))
 
 
+@pytest.fixture(scope="module")
+def test_base_text_file_path() -> fs.BaseTextFile:
+    """Create a temporary base text file for testing."""
+    md_path = TEST_MARKDOWN_FILE
+    return fs.BaseTextFile.populate(Path(md_path))
+
+
 def test_file_system_setup(
     test_dir_path,
     test_markdown_file_path,
@@ -199,3 +206,24 @@ def test_generic_file_contents(test_generic_file_path):
     # check sqlite-specific attributes
     assert generic_file.stat_json is not None
     assert generic_file.path_json is not None
+
+
+def test_base_text_file_contents(test_base_text_file_path):
+    """Test that the base text file contents are correctly read."""
+    text_file = test_base_text_file_path
+    assert text_file.path_json is not None
+    assert text_file.stat_json is not None
+    assert text_file.sha256 is not None
+    assert text_file.mime_type == "text/markdown"
+    # check metadata attributes
+    assert text_file.short_description is None
+    assert text_file.long_description is None
+    assert text_file.tags == []
+    # check text-specific attributes
+    lines_json = text_file.lines_json
+    assert len(lines_json) > 0
+    assert lines_json[0].line_number == 1
+    assert lines_json[0].content.startswith("# Test Markdown File")
+    content = text_file.content
+    assert "# Test Markdown File" in content
+    assert "def hello_world():" in content
