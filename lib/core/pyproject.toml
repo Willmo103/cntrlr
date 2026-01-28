@@ -1,6 +1,6 @@
 [project]
 name = "core"
-version = "0.1.3"
+version = "0.1.4"
 description = "Core library for cntrlr"
 readme = "README.md"
 authors = [
@@ -19,6 +19,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "black>=26.1.0",
+    "coverage>=7.13.2",
     "isort>=7.0.0",
     "pytest>=9.0.2",
 ]

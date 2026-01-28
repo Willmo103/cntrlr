@@ -1,6 +1,6 @@
 [project]
 name = "cntrlr"
-version = "0.1.1"
+version = "0.1.2"
 description = "CNTRLR modular application"
 authors = [
     { name = "WIll Morris", email = "88165849+Willmo103@users.noreply.github.com" }
