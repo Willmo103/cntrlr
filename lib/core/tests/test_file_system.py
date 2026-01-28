@@ -111,3 +111,27 @@ def test_file_system_setup(
     assert test_data_file_path.Path.exists()
     assert test_sqlite_file_path.Path.exists()
     assert test_generic_file_path.Path.exists()
+
+
+def test_file_types(
+    test_markdown_file_path,
+    test_image_file_path,
+    test_video_file_path,
+    test_data_file_path,
+    test_sqlite_file_path,
+    test_generic_file_path,
+):
+    """Test that the file types are correctly identified."""
+    assert isinstance(test_markdown_file_path, fs.BaseTextFile)
+    assert isinstance(test_image_file_path, fs.ImageFile)
+    assert isinstance(test_video_file_path, fs.VideoFile)
+    assert isinstance(test_data_file_path, fs.DataFile)
+    assert isinstance(test_sqlite_file_path, fs.SQLiteFile)
+    assert isinstance(test_generic_file_path, fs.GenericFile)
+
+
+def test_sqlite_file_contents(test_sqlite_file_path):
+    """Test that the SQLite file contents are correctly read."""
+    sqlite_file = test_sqlite_file_path
+    assert sqlite_file.db_schema is not None
+    assert "users" in sqlite_file.tables
