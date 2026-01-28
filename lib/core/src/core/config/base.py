@@ -24,6 +24,7 @@ Contents:
     - APP_ENV (Literal["prod", "docker", "dev"]): The detected application environment.
     - TTS_MODELS_DIR (Path): The directory where TTS models are stored, resolved
         based on the current environment.
+    - REMOTES_DIR (Path): The directory where remote resources are stored.
 
 Environment Detection Logic:
 - Priority 1: Checks the ENVIRONMENT environment variable for explicit configuration.

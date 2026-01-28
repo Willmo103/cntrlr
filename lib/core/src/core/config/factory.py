@@ -39,9 +39,8 @@ Design notes:
     class is requested multiple times during application lifecycle.
 """
 
-import json
-
 # region Imports
+import json
 from functools import lru_cache
 from typing import Any, Type, TypeVar
 
