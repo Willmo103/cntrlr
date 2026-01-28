@@ -135,3 +135,18 @@ def test_sqlite_file_contents(test_sqlite_file_path):
     sqlite_file = test_sqlite_file_path
     assert sqlite_file.db_schema is not None
     assert "users" in sqlite_file.tables
+
+
+def test_markdown_file_contents(test_markdown_file_path):
+    """Test that the Markdown file contents are correctly read."""
+    md_file = test_markdown_file_path
+    content = md_file.content
+    assert "# Test Markdown File" in content
+    assert "def hello_world():" in content
+
+
+def test_image_file_contents(test_image_file_path):
+    """Test that the image file contents are correctly read."""
+    img_file = test_image_file_path
+    content = img_file.b64_data
+    assert content.startswith(b"\x89PNG")

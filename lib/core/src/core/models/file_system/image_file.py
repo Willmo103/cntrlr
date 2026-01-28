@@ -358,11 +358,7 @@ class ImageFile(BaseFileModel):
             instance.thumbnail_b64_data = thumbnail_b64_data
             instance.exif_data = exif_data
         except Exception as e:
-            print(f"Error extracting EXIF data from image file {file_path}: {e}")
-            instance.fmt = None
-            instance.b64_data = None
-            instance.thumbnail_b64_data = None
-            instance.exif_data = {}
+            raise ValueError(f"Error processing image file {file_path}: {e}")
         return instance
 
     @property

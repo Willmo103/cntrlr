@@ -9,6 +9,9 @@ from core.database import Base
 # Add the src directory to the path for imports
 src_path = Path(__file__).parent.parent / "src"
 sys.path.insert(0, str(src_path))
+TEST_DATA_FOLDER = Path(__file__).parent / "test_data"
+TEST_MP3_FILE = TEST_DATA_FOLDER / "file_example_MP3_700KB.mp3"
+TEST_MP4_FILE = TEST_DATA_FOLDER / "file_example_MP4_480_1_5MG.mp4"
 
 
 @pytest.fixture(scope="session")
