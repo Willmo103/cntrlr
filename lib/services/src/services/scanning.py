@@ -32,7 +32,7 @@ from core.models import (  # noqa: F401
 )
 
 # endregion
-# region Exceptions
+# region ServiceExceptions
 
 
 class RepositoryCloningError(Exception):
@@ -54,7 +54,7 @@ class RepositoryAlreadyExistsError(Exception):
 
 
 # endregion
-# revion Services
+# region ServiceTypes
 class ScanRootEntity(BaseModel):
     """
     Entity representing a scan root in the database.
@@ -197,6 +197,10 @@ class ClonedRepoIdxEntity(BaseModel):
         if isinstance(v, str):
             return datetime.fromisoformat(v)
         return v
+
+
+# endregion
+# region Services
 
 
 class RepoIndex:
@@ -461,7 +465,7 @@ class RepoIndex:
                 yield (repo_path, False, str(e))
 
 
-class RepoScanner:
+class LocalRepoScanner:
     """
     Service for scanning directories to locate Git repositories.
 
@@ -490,7 +494,7 @@ class RepoScanner:
         self.__db = self.__settings.db
         self.__index = RepoIndex(logger, settings)
 
-    def locate_repos(
+    def __locate_repos(
         self, base_path: Path, recursive: bool = True
     ) -> Generator[Path, None, None]:
         """
@@ -513,6 +517,50 @@ class RepoScanner:
             for item in base_path.iterdir():
                 if item.is_dir() and (item / ".git").exists():
                     yield item
+
+    def __index_repos(
+        self,
+        base_path: Path,
+        recursive: bool = True,
+        copy: bool = False,
+    ) -> Generator[Path, None, None]:
+        """
+        Locate and index Git repositories within the specified base path.
+
+        Arguments:
+            base_path (Path): The base directory to search for repositories.
+            recursive (bool): Whether to search recursively. Defaults to True.
+            copy (bool): Whether to copy local repositories to the managed remotes directory. Defaults to False.
+
+        Yields:
+            Generator[Path, None, None]: A generator yielding paths to indexed repositories.
+        """
+        for repo_path in self.__locate_repos(base_path, recursive):
+            try:
+                self.__index.add_local_repo(repo_path, copy)
+                yield repo_path
+            except RepositoryAlreadyExistsError:
+                self.__logger.info(f"Repository at {repo_path} is already indexed.")
+            except Exception as e:
+                self.__logger.error(f"Failed to index repository at {repo_path}: {e}")
+
+    def scan(
+        self,
+        base_path: Path,
+        recursive: bool = True,
+        copy: bool = False,
+    ) -> Generator[Path, None, None]:
+        """
+        Public method to scan and index Git repositories.
+
+        Arguments:
+            base_path (Path): The base directory to search for repositories.
+            recursive (bool): Whether to search recursively. Defaults to True.
+            copy (bool): Whether to copy local repositories to the managed remotes directory. Defaults to False.
+        Yields:
+            Generator[Path, None, None]: A generator yielding paths to indexed repositories.
+        """
+        return self.__index_repos(base_path, recursive, copy)
 
 
 class ScanRootManager:
@@ -645,5 +693,6 @@ class ScanRootManager:
 
 
 # endregion
-# region Exports
+
+
 __all__ = []
