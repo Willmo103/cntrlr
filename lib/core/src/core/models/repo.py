@@ -69,6 +69,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
 
+from core.utils import get_git_metadata
+import git
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_serializer
 from sqlalchemy import (
     DDL,
@@ -314,8 +316,7 @@ class RepoFileEntity(Base):
 # --- TRIGGER LOGIC FOR FileLinesModel ---
 # Expects JSON: { "lines": [ {"content": "...", "line_number": 1}, ... ] }
 
-repo_shred_lines_func = DDL(
-    """
+repo_shred_lines_func = DDL("""
 CREATE OR REPLACE FUNCTION process_repo_file_lines()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -345,15 +346,12 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-"""
-)
-setup_repo_file_lines_trigger = DDL(
-    """
+""")
+setup_repo_file_lines_trigger = DDL("""
 CREATE TRIGGER repo_trigger_shred_lines
 AFTER INSERT OR UPDATE OF lines_json ON repo_files
 FOR EACH ROW EXECUTE FUNCTION process_repo_file_lines();
-"""
-)
+""")
 
 
 event.listen(RepoFileEntity.__table__, "after_create", repo_shred_lines_func)  # noqa
@@ -573,6 +571,32 @@ class Repo(BaseDirectory):
         if all(isinstance(item, dict) for item in v):
             return [RepoFile.model_validate(item) for item in v]
         return v
+
+    @classmethod
+    def populate(
+        cls,
+        dir_path: Path,
+        repo_type: Optional[Literal["git-cloned", "git-local"]] = None,
+    ) -> "Repo":
+        """
+        Populate a Repo model from a directory path.
+        """
+        instance = super().populate(dir_path)
+        instance.git_metadata = get_git_metadata(dir_path)
+        instance.url = (
+            instance.git_metadata.remotes.get("origin")
+            if instance.git_metadata
+            else None
+        )
+        instance.type = repo_type
+        file_ls = git.Repo(dir_path).git.ls_files().splitlines()
+        for file_rel_path in file_ls:
+            file_abs_path = dir_path / file_rel_path
+            if file_abs_path.is_file():
+                repo_file = RepoFile.populate(file_abs_path)
+                instance.files.append(repo_file)
+
+        return instance
 
     @property
     def docs(self) -> list[RepoFile]:
