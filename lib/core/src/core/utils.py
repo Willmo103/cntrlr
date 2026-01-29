@@ -287,43 +287,48 @@ def get_file_stat_model(file_path: Path) -> Union["BaseFileStat", "LinuxFileStat
     """
     from core.base import LinuxFileStat, MacOSFileStat, WindowsFileStat, BaseFileStat
     from os import stat as os_stat
+    try:
+        if isinstance(file_path, str):
+            file_path = Path(file_path)
+        if not file_path.exists():
+            raise FileNotFoundError(f"File not found: {file_path}")
+        file_stat = os_stat(file_path)
 
-    file_stat = os_stat(file_path)
-
-    system = sys.platform
-    if system == "Darwin":
-        return MacOSFileStat.model_validate(
-            {
-                stat_key: getattr(file_stat, stat_key)
-                for stat_key in dir(file_stat)
-                if not stat_key.startswith("_")
-            }
-        )
-    elif system == "Windows":
-        return WindowsFileStat.model_validate(
-            {
-                stat_key: getattr(file_stat, stat_key)
-                for stat_key in dir(file_stat)
-                if not stat_key.startswith("_")
-            }
-        )
-    elif system == "Linux":
-        return LinuxFileStat.model_validate(
-            {
-                stat_key: getattr(file_stat, stat_key)
-                for stat_key in dir(file_stat)
-                if not stat_key.startswith("_")
-            }
-        )
-    else:
+        system = sys.platform
+        # if system == "Darwin":
+        #     return MacOSFileStat.model_validate(
+        #         {
+        #             stat_key: getattr(file_stat, stat_key)
+        #             for stat_key in dir(file_stat)
+        #             if not stat_key.startswith("_")
+        #         }, from_attributes=True
+        #     )
+        # elif system == "Windows":
+        #     return WindowsFileStat.model_validate(
+        #         {
+        #             stat_key: getattr(file_stat, stat_key)
+        #             for stat_key in dir(file_stat)
+        #             if not stat_key.startswith("_")
+        #         }, from_attributes=True
+        #     )
+        # elif system == "Linux":
+        #     return LinuxFileStat.model_validate(
+        #         {
+        #             stat_key: getattr(file_stat, stat_key)
+        #             for stat_key in dir(file_stat)
+        #             if not stat_key.startswith("_")
+        #         }, from_attributes=True
+        #     )
+        # else:
         return BaseFileStat.model_validate(
             {
                 stat_key: getattr(file_stat, stat_key)
                 for stat_key in dir(file_stat)
                 if not stat_key.startswith("_")
-            }
+            },  from_attributes=True
         )
-
+    except Exception as e:
+        raise RuntimeError(f"Error getting file stat for {file_path}: {e}") from e
 
 def get_path_model(file_path: Path) -> "PathModel":  # type: ignore  # noqa: F821
     """

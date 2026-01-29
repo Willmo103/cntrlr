@@ -581,22 +581,29 @@ class Repo(BaseDirectory):
         """
         Populate a Repo model from a directory path.
         """
-        instance = super().populate(dir_path)
-        instance.git_metadata = get_git_metadata(dir_path)
-        instance.url = (
-            instance.git_metadata.remotes.get("origin")
-            if instance.git_metadata
-            else None
-        )
-        instance.type = repo_type
-        file_ls = git.Repo(dir_path).git.ls_files().splitlines()
-        for file_rel_path in file_ls:
-            file_abs_path = dir_path / file_rel_path
-            if file_abs_path.is_file():
-                repo_file = RepoFile.populate(file_abs_path)
-                instance.files.append(repo_file)
+        try:
+            if isinstance(dir_path, str):
+                dir_path = Path(dir_path).resolve()
+            instance = super().populate(dir_path)
+            instance.git_metadata = get_git_metadata(dir_path)
+            instance.url = (
+                instance.git_metadata.remotes.get("origin")
+                if instance.git_metadata
+                else None
+            )
+            instance.type = repo_type
+            file_ls = git.Repo(dir_path).git.ls_files().splitlines()
+            for file_rel_path in file_ls:
+                file_abs_path = dir_path / file_rel_path
+                if file_abs_path.is_file():
+                    repo_file = RepoFile.populate(file_abs_path)
+                    instance.files.append(repo_file)
 
-        return instance
+            return instance
+        except Exception as e:
+            raise RuntimeError(
+                f"Error populating Repo model from path {dir_path}: {e}", stacklevel=1
+            ) from e
 
     @property
     def docs(self) -> list[RepoFile]:

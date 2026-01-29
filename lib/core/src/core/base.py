@@ -80,7 +80,7 @@ from pydantic import (
     model_validator,
 )
 
-from core.utils import (
+from .utils import (
     get_file_sha256,
     get_file_stat_model,
     get_mime_type,
@@ -732,6 +732,8 @@ class BaseDirectory(BaseModel):
         Returns:
             BaseDirectory: An instance of BaseDirectory populated with directory data.
         """
+        if isinstance(dir_path, str):
+            dir_path = Path(dir_path).resolve()
         if not dir_path.exists():
             raise FileNotFoundError(f"Directory not found: {dir_path}")
         if not dir_path.is_dir():
