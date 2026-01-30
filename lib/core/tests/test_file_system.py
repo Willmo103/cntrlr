@@ -1,3 +1,4 @@
+from hashlib import sha256
 from pathlib import Path
 from core.models import file_system as fs
 import pytest
@@ -109,9 +110,13 @@ def test_sqlite_file_contents(test_sqlite_file_path):
     """Test that the SQLite file contents are correctly read."""
     sqlite_file = test_sqlite_file_path
     # check basemodel attributes
-    assert sqlite_file.path_json is not None
-    assert sqlite_file.stat_json is not None
-    assert sqlite_file.sha256 is not None
+    assert sqlite_file.path_json is not None and isinstance(
+        sqlite_file.path_json, fs.FilePath
+    )
+    assert sqlite_file.stat_json is not None and isinstance(
+        sqlite_file.stat_json, fs.BaseFileStat
+    )
+    assert sqlite_file.sha256 is not None and isinstance(sqlite_file.sha256, str)
     assert sqlite_file.mime_type == "application/vnd.sqlite3"
     # check metadata attributes
     assert sqlite_file.short_description is None
@@ -137,6 +142,14 @@ def test_markdown_file_contents(test_markdown_file_path):
     content = md_file.content
     assert "# Test Markdown File" in content
     assert "def hello_world():" in content
+    # test lines_json
+    assert isinstance(md_file.lines_json, list)
+    line = md_file.lines_json[0]
+    assert isinstance(line, fs.TextFileLine)
+    assert line.line_number == 1
+    assert line.id is not None
+    assert line.content.startswith("# Test Markdown File")
+    assert line.content_hash == sha256(line.content.encode("utf-8")).hexdigest()
 
 
 def test_image_file_contents(test_image_file_path):
@@ -150,10 +163,15 @@ def test_image_file_contents(test_image_file_path):
     assert img_file.short_description is None
     assert img_file.long_description is None
     assert img_file.tags == []
-    # check sqlite-specific attributes
-    content = img_file.b64_data
-    assert content is not None
-    assert len(content) > 0
+    # check image-specific attributes
+    assert img_file.exif_data is not None
+    assert img_file.thumbnail_b64_data is not None
+    assert img_file.html_img_tag.startswith("<img ")
+    assert img_file.md_img_tag.startswith("![")
+    assert img_file.html_thumbnail_tag.startswith("<img ")
+    assert img_file.md_thumbnail_tag.startswith("![")
+    assert img_file.b64_data is not None
+    assert img_file.thumbnail_b64_data is not None
 
 
 def test_video_file_contents(test_video_file_path):

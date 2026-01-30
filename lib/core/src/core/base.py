@@ -69,7 +69,7 @@ Design Notes:
 from datetime import datetime
 from hashlib import sha256
 from pathlib import Path
-from typing import Any, Dict, Literal, Optional, Union
+from typing import Literal, Optional, Union
 
 from pydantic import (
     BaseModel,
@@ -831,7 +831,6 @@ class TextFileLine(BaseModel):
         line (TextFileLine): A line in the text file.
     """
 
-    id: Optional[int] = None
     file_id: str = Field(..., description="The ID of the text file")
     content: str = Field(..., description="The content of the line")
     line_number: Optional[int] = Field(None, description="The line number in the file")
@@ -846,6 +845,11 @@ class TextFileLine(BaseModel):
         """
         self.content_hash = sha256(self.content.encode()).hexdigest()
         return self
+
+    @property
+    def id(self) -> str:
+        """Generate a unique ID for the line based on file_id and line_number."""
+        return sha256(f"{self.file_id}-{self.line_number}".encode()).hexdigest()
 
     @property
     def is_empty(self) -> bool:
