@@ -3,18 +3,17 @@
 Scanning Service Module
 """
 
+import os
+
 # endregion
 # region Imports
 from datetime import datetime
 from logging import Logger as T_Logger
-import os
 from pathlib import Path
 from typing import Any, Generator, Literal, Optional, Union
-from core.utils import get_time
 
 import git
 import sqlite_utils
-
 from pydantic import Field, field_validator, model_serializer
 
 from core.base import BaseModel
@@ -30,6 +29,8 @@ from core.models import (  # noqa: F401
     VideoFile,
     VideoScanResult,
 )
+from core.utils import get_time
+
 
 # endregion
 # region ServiceExceptions

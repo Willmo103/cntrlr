@@ -1,7 +1,10 @@
 from hashlib import sha256
 from pathlib import Path
-from core.models import file_system as fs
+
 import pytest
+
+from core.models import file_system as fs
+
 
 TEST_DATA_FOLDER = Path(__file__).parent / "test_data"
 TEST_MP3_FILE = TEST_DATA_FOLDER / "file_example_MP3_700KB.mp3"

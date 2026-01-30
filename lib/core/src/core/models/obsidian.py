@@ -129,6 +129,7 @@ from core.base import (
 )
 from core.database import Base
 
+
 # endregion
 # region Constants
 OBSIDIAN_PARENT_FOLDER_MARKER = ".obsidian"

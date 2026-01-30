@@ -36,13 +36,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal, Optional
 
-from core.utils import is_video_file
 from pydantic import model_serializer
 from sqlalchemy import Computed, DateTime, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from core.base import BaseFileModel, BaseFileStat, FilePath
 from core.database import Base
+from core.utils import is_video_file
 
 
 # endregion

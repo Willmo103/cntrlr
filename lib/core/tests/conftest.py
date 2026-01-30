@@ -1,10 +1,13 @@
-import pytest
 import sys
 from pathlib import Path
+
+import pytest
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
+
 from core.database import Base
+
 
 # Add the src directory to the path for imports
 src_path = Path(__file__).parent.parent / "src"

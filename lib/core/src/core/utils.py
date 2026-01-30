@@ -59,6 +59,7 @@ from core.constants import (
     VIDEO_FORMAT_LIST,
 )
 
+
 # endregion
 # region General Utilities
 # General utility functions for various tasks.
@@ -299,10 +300,11 @@ def get_file_stat_model(file_path: Path) -> Union["BaseFileStat", "LinuxFileStat
         >>> print(stat_model)
         LinuxFileStatModel(...)
     """
-    from core.base import (
-        BaseFileStat,
-    )  # , LinuxFileStat, MacOSFileStat, WindowsFileStat,
     from os import stat as os_stat
+
+    from core.base import (  # , LinuxFileStat, MacOSFileStat, WindowsFileStat,
+        BaseFileStat,
+    )
 
     try:
         if isinstance(file_path, str):

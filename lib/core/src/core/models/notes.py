@@ -42,6 +42,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from core.database import Base
 
+
 # endregion
 # region Sqlalchemy Note Model
 

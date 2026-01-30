@@ -29,6 +29,7 @@ core.models.history package initialization.
 # region Imports
 from .clipboard_history import ClipboardHistory, ClipboardHistoryEntity  # noqa: F401
 
+
 # endregion
 # region Exports
 __entities__ = ["ClipboardHistoryEntity"]

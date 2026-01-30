@@ -40,13 +40,15 @@ Design Notes:
     while maintaining type safety and IDE autocompletion support.
 """
 
+import enum
+import os
+
 # endregion
 # region Imports
 # Patterns for file parts to ignore (matched anywhere in path)
 from datetime import datetime
-import enum
-import os
 from typing import List
+
 
 # endregion
 # region Constants -- IGNORE_PARTS

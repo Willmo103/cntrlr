@@ -85,12 +85,13 @@ from .utils import (
     get_file_stat_model,
     get_mime_type,
     get_path_model,
-    is_markdown_formattable,
-    is_image_file,
-    is_data_file,
-    is_video_file,
     is_binary_file,
+    is_data_file,
+    is_image_file,
+    is_markdown_formattable,
+    is_video_file,
 )
+
 
 # endregion
 # region Base File System Models

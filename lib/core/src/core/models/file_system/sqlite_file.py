@@ -38,13 +38,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, List, Literal, Optional
 
-from core.utils import get_sqlite_schema, get_sqlite_tables
 from pydantic import ConfigDict, field_validator, model_serializer
 from sqlalchemy import Computed, DateTime, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from core.base import BaseFileModel, BaseFileStat, FilePath
 from core.database import Base
+from core.utils import get_sqlite_schema, get_sqlite_tables
 
 
 # endregion

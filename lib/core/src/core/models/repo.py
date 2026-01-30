@@ -69,8 +69,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from core.models.file_system import BaseDirectory
-from core.utils import get_git_metadata
 import git
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_serializer
 from sqlalchemy import (
@@ -89,12 +87,20 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from core.base import (
+    BaseScanResult,
     BaseTextFile,
     TextFileLine,
-    BaseScanResult,
 )
-from core.database import Base
 from core.config.base import REMOTES_DIR
+from core.database import Base
+from core.models.file_system import BaseDirectory
+from core.utils import (
+    get_git_metadata,
+    is_binary_file,
+    is_image_file,
+    is_video_file,
+)
+
 
 # endregion
 # region Pydantic Models for Git Metadata
@@ -316,7 +322,8 @@ class RepoFileEntity(Base):
 # --- TRIGGER LOGIC FOR FileLinesModel ---
 # Expects JSON: { "lines": [ {"content": "...", "line_number": 1}, ... ] }
 
-repo_shred_lines_func = DDL("""
+repo_shred_lines_func = DDL(
+    """
 CREATE OR REPLACE FUNCTION process_repo_file_lines()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -346,12 +353,15 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-""")
-setup_repo_file_lines_trigger = DDL("""
+"""
+)
+setup_repo_file_lines_trigger = DDL(
+    """
 CREATE TRIGGER repo_trigger_shred_lines
 AFTER INSERT OR UPDATE OF lines_json ON repo_files
 FOR EACH ROW EXECUTE FUNCTION process_repo_file_lines();
-""")
+"""
+)
 
 
 event.listen(RepoFileEntity.__table__, "after_create", repo_shred_lines_func)  # noqa
@@ -545,6 +555,16 @@ class Repo(BaseDirectory):
         None, description="Timestamp when the repository was last seen"
     )
 
+    def _should_skip_file(self, file_rel_path: str) -> bool:
+        """
+        Determine if a file should be skipped based on its relative path.
+        """
+        return not (
+            is_image_file(file_rel_path)
+            or is_video_file(file_rel_path)
+            or is_binary_file(file_rel_path)
+        )
+
     @model_serializer(when_used="json")
     def serialize_model(self) -> dict:
         return {
@@ -636,13 +656,13 @@ class Repo(BaseDirectory):
             instance.repo_type = repo_type
             file_ls = git.Repo(dir_path).git.ls_files().splitlines()
             for file_rel_path in file_ls:
-                if instance._should_skip_file(file_rel_path):
-                    continue
                 file_abs_path = dir_path / file_rel_path
                 if file_abs_path.is_file():
                     repo_file = RepoFile.populate(
                         file_abs_path, repo_id=instance.id, repo_root=dir_path
                     )
+                    if repo_file._should_skip_file(file_rel_path):
+                        continue
                     instance.files.append(repo_file)
 
             return instance

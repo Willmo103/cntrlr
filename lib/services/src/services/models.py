@@ -3,8 +3,10 @@
 from datetime import datetime
 from typing import Optional
 
-from core.utils import get_time
 from pydantic import BaseModel, Field
+
+from core.utils import get_time
+
 
 # endregion
 # region Pydantic Models
