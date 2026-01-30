@@ -120,6 +120,19 @@ def is_video_file(path: Path) -> bool:
     return path.suffix.lower() in VIDEO_FORMAT_LIST
 
 
+def is_binary_file(path: Path) -> bool:
+    """
+    Check if the given path is a binary file based on its extension.
+
+    Args:
+        path (Path): The file path to check.
+
+    Returns:
+        bool: True if the file is a binary file, False otherwise.
+    """
+    return get_mime_type(path).startswith("application/") and not is_data_file(path)
+
+
 def get_markdown_format(suffix: str) -> str | None:
     """
     Get the markdown format corresponding to the given file suffix.
@@ -386,9 +399,10 @@ def get_mime_type(file_path: Path) -> str:
     try:
         import mimetypes
 
-        mime_type, _ = mimetypes.guess_type(file_path.as_posix(), strict=False)
+        mime_type, _ = mimetypes.guess_type(file_path.as_posix())
         if mime_type is None:
             return "application/octet-stream"
+        return mime_type
     except Exception as e:
         raise RuntimeError(f"Error getting MIME type for file {file_path}") from e
 

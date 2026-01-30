@@ -69,6 +69,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
 
+from core.models.file_system import BaseDirectory
 from core.utils import get_git_metadata
 import git
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_serializer
@@ -88,13 +89,12 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from core.base import (
-    BaseDirectory,
-    BaseScanResult,
     BaseTextFile,
     TextFileLine,
+    BaseScanResult,
 )
-from core.config.base import REMOTES_DIR
 from core.database import Base
+from core.config.base import REMOTES_DIR
 
 # endregion
 # region Pydantic Models for Git Metadata
@@ -470,6 +470,48 @@ class RepoFile(BaseTextFile):
             "repo_id": self.repo_id,
         }
 
+    @classmethod
+    def populate(cls, file_path: Path, repo_id: str, repo_root: Path) -> "RepoFile":
+        """
+        Populate a RepoFile model from a file path.
+        """
+        try:
+            if isinstance(file_path, str):
+                file_path = Path(file_path).resolve()
+            instance = super().populate(file_path)
+            instance.type = "repo-file"
+            instance.repo_id = repo_id
+            instance.repo_path = str(file_path.relative_to(repo_root))
+            return instance
+        except Exception as e:
+            raise RuntimeError(
+                f"Error populating RepoFile model from path {file_path}: {e}"
+            ) from e
+
+    @field_validator("repo_path", mode="before")
+    def validate_repo_path(cls, v: Any) -> Optional[str]:
+        """
+        Validator for 'repo_path' field to ensure it is a string or None.
+        """
+        if v is None:
+            raise ValueError("repo_path cannot be None")
+        if isinstance(v, Path):
+            return v.as_posix()
+        if not isinstance(v, str):
+            raise ValueError("repo_path must be a string or Path")
+        return v
+
+    @field_validator("repo_id", mode="before")
+    def validate_repo_id(cls, v: Any) -> Optional[str]:
+        """
+        Validator for 'repo_id' field to ensure it is a string or None.
+        """
+        if v is None:
+            raise ValueError("repo_id cannot be None")
+        if not isinstance(v, str):
+            raise ValueError("repo_id must be a string")
+        return v
+
 
 class Repo(BaseDirectory):
     """
@@ -594,9 +636,13 @@ class Repo(BaseDirectory):
             instance.repo_type = repo_type
             file_ls = git.Repo(dir_path).git.ls_files().splitlines()
             for file_rel_path in file_ls:
+                if instance._should_skip_file(file_rel_path):
+                    continue
                 file_abs_path = dir_path / file_rel_path
                 if file_abs_path.is_file():
-                    repo_file = RepoFile.populate(file_abs_path)
+                    repo_file = RepoFile.populate(
+                        file_abs_path, repo_id=instance.id, repo_root=dir_path
+                    )
                     instance.files.append(repo_file)
 
             return instance
@@ -712,4 +758,6 @@ __all__ = [
     "Repo",
     "RepoFile",
     "RepoScanResult",
+    "GitMetadata",
+    "GitCommit",
 ]

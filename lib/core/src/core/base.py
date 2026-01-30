@@ -69,7 +69,7 @@ Design Notes:
 from datetime import datetime
 from hashlib import sha256
 from pathlib import Path
-from typing import Literal, Optional, Union
+from typing import Any, Dict, Literal, Optional, Union
 
 from pydantic import (
     BaseModel,
@@ -89,6 +89,7 @@ from .utils import (
     is_image_file,
     is_data_file,
     is_video_file,
+    is_binary_file,
 )
 
 # endregion
@@ -670,6 +671,8 @@ class BaseFileModel(BaseModel):
         try:
             if isinstance(file_path, str):
                 file_path = Path(file_path).resolve()
+            else:
+                file_path = file_path.resolve()
             if not file_path.exists() or not file_path.is_file():
                 raise FileNotFoundError(f"File not found: {file_path}")
             return cls(
@@ -684,6 +687,14 @@ class BaseFileModel(BaseModel):
             )
         except Exception as e:
             raise ValueError(f"Error populating BaseFileModel: {e}")
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, BaseFileModel):
+            return NotImplemented
+        return self.id == other.id and self.uuid == other.uuid
+
+    def __hash__(self) -> int:
+        return hash((self.id, self.uuid))
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True, check_fields=False, from_attributes=True
@@ -764,6 +775,8 @@ class BaseDirectory(BaseModel):
         """
         if isinstance(dir_path, str):
             dir_path = Path(dir_path).resolve()
+        else:
+            dir_path = dir_path.resolve()
         if not dir_path.exists():
             raise FileNotFoundError(f"Directory not found: {dir_path}")
         if not dir_path.is_dir():
@@ -781,6 +794,14 @@ class BaseDirectory(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
     )
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, BaseDirectory):
+            return NotImplemented
+        return self.id == other.id and self.uuid == other.uuid
+
+    def __hash__(self) -> int:
+        return hash((self.id, self.uuid))
 
     def is_empty(self) -> bool:
         """
@@ -918,6 +939,104 @@ class BaseTextFile(BaseFileModel):
     def lines(self) -> list[TextFileLine]:
         """Returns a list of TextFileLine models representing the lines in the text file."""
         return self.lines_json if self.lines_json else []
+
+
+class DirectoryTree(BaseDirectory):
+    """
+    A Pydantic model to represent a directory tree with its files and subdirectories.
+    Attributes:
+        files (list[BaseFileModel]): A list of files in the directory.
+        directories (list[BaseDirectory]): A list of subdirectories in the directory.
+    """
+
+    files: list[Union[BaseFileModel, None]] = Field(
+        default=[], description="A list of files in the directory"
+    )
+    directories: list["DirectoryTree"] = Field(
+        default=[], description="A list of subdirectories in the directory"
+    )
+
+    @model_serializer(when_used="json")
+    def serialize_model(self) -> dict:
+        base_serialization = super().serialize_model()
+        base_serialization.update(
+            {
+                "files": [file.model_dump() for file in self.files],
+                "directories": [dir.model_dump() for dir in self.directories],
+            }
+        )
+        return base_serialization
+
+    @classmethod
+    def populate(cls, dir_path: Path) -> "DirectoryTree":
+        """
+        Populate the model attributes based on the given directory path.
+
+        Args:
+            dir_path (Path): The path to the directory.
+
+        Returns:
+            DirectoryTree: An instance of DirectoryTree populated with directory data.
+        """
+        base_directory = super().populate(dir_path)
+        files = []
+        directories = []
+        for item in dir_path.iterdir():
+            if item.is_file():
+                try:
+                    if is_image_file(item):
+                        from .models import ImageFile
+
+                        try:
+                            file_model = ImageFile.populate(item)
+                            files.append(file_model)
+                        except Exception:
+                            continue
+                    elif is_video_file(item):
+                        from .models import VideoFile
+
+                        try:
+                            file_model = VideoFile.populate(item)
+                            files.append(file_model)
+                        except Exception:
+                            continue
+                    elif is_data_file(item):
+                        from .models import DataFile
+
+                        try:
+                            file_model = DataFile.populate(item)
+                            files.append(file_model)
+                        except Exception:
+                            continue
+                    elif is_binary_file(item):
+                        try:
+                            file_model = GenericFile.populate(item)
+                            files.append(file_model)
+                        except Exception:
+                            continue
+                    elif is_markdown_formattable(item):
+                        from .models import TextFile
+
+                        try:
+                            file_model = TextFile.populate(item)
+                            files.append(file_model)
+                        except Exception:
+                            continue
+                except Exception:
+                    continue
+
+            elif item.is_dir():
+                try:
+                    dir_model = DirectoryTree.populate(item)
+                    directories.append(dir_model)
+                except Exception:
+                    continue
+        base_directory.files = files
+        base_directory.directories = directories
+        return base_directory
+
+
+DirectoryTree.model_rebuild()  # To handle self-referencing type
 
 
 # endregion

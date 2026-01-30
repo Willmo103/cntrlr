@@ -1,1 +1,3 @@
 from pathlib import Path; from lib.core.src.core.models.file_system.base import BaseFile; test_file = Path("dev/python_repl_strings.txt"); file_model = BaseFile.populate(test_file); print(file_model.content)
+---
+from pathlib import Path; p = Path(".").resolve(); from core import base as mod; mod.DirectoryTree.populate(p)
