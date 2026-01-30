@@ -143,7 +143,7 @@ class RepoEntity(Base):
         short_description (Optional[str]): Short description of the repository.
         long_description (Optional[str]): Long description of the repository.
         frozen (bool): Indicates if the repository is frozen (immutable).
-        type (Literal["git-local", "git-cloned"]): Type of the repository.
+        repo_type (Literal["git-local", "git-cloned"]): Type of the repository.
         url (Optional[str]): URL of the repository.
         git_metadata (Optional[dict]): JSON field storing Git-specific metadata.
         last_seen (Optional[datetime]): Timestamp when the repository was last seen.
@@ -163,7 +163,7 @@ class RepoEntity(Base):
     frozeen: Mapped[bool] = mapped_column(String, default=False, server_default="0")
 
     # repo-specific fields
-    type: Mapped[Literal["git-local", "git-cloned"]] = mapped_column(
+    repo_type: Mapped[Literal["git-local", "git-cloned"]] = mapped_column(
         String(20), nullable=False
     )
     url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
@@ -204,7 +204,7 @@ class RepoEntity(Base):
             short_description=self.short_description,
             long_description=self.long_description,
             frozen=self.frozen,
-            type=self.type,
+            repo_type=self.repo_type,
             url=self.url,
             git_metadata=(
                 GitMetadata.model_validate(self.git_metadata)
@@ -489,8 +489,8 @@ class Repo(BaseDirectory):
         last_seen (Optional[datetime]): Timestamp when the repository was last seen.
     """
 
-    type: Literal["local", "cloned"] = Field(
-        ..., description="The type of the repository directory"
+    repo_type: Literal["git-local", "git-cloned"] = Field(
+        "git-local", description="The type of the repository directory"
     )
     url: Optional[str] = Field(None, description="The URL of the repository")
     files: List[RepoFile] = Field(
@@ -507,7 +507,7 @@ class Repo(BaseDirectory):
     def serialize_model(self) -> dict:
         return {
             **super().serialize_model(),
-            "type": self.type,
+            "repo_type": self.repo_type,
             "url": self.url,
             "files": [file.model_dump() for file in self.files],
             "git_metadata": (
@@ -541,12 +541,12 @@ class Repo(BaseDirectory):
             return GitMetadata.model_validate(v)
         return v
 
-    @field_validator("type", mode="before")
+    @field_validator("repo_type", mode="before")
     def validate_type(cls, v: Union[str, None]) -> Optional[str]:
         """
-        Validator for 'type' field to ensure it is either 'local' or 'cloned'.
+        Validator for 'repo_type' field to ensure it is either 'local' or 'cloned'.
         """
-        if v not in {"local", "cloned"}:
+        if v not in {"git-local", "git-cloned"}:
             raise ValueError(f"Invalid repo type: {v}")
         return v
 
@@ -576,7 +576,7 @@ class Repo(BaseDirectory):
     def populate(
         cls,
         dir_path: Path,
-        repo_type: Optional[Literal["git-cloned", "git-local"]] = None,
+        repo_type: Optional[Literal["git-cloned", "git-local"]] = "git-local",
     ) -> "Repo":
         """
         Populate a Repo model from a directory path.
@@ -591,7 +591,7 @@ class Repo(BaseDirectory):
                 if instance.git_metadata
                 else None
             )
-            instance.type = repo_type
+            instance.repo_type = repo_type
             file_ls = git.Repo(dir_path).git.ls_files().splitlines()
             for file_rel_path in file_ls:
                 file_abs_path = dir_path / file_rel_path
@@ -602,7 +602,7 @@ class Repo(BaseDirectory):
             return instance
         except Exception as e:
             raise RuntimeError(
-                f"Error populating Repo model from path {dir_path}: {e}", stacklevel=1
+                f"Error populating Repo model from path {dir_path}: {e}"
             ) from e
 
     @property
@@ -624,9 +624,9 @@ class Repo(BaseDirectory):
         """
         Return the root path of the repository based on its type.
         """
-        if self.type == "local":
+        if self.repo_type == "local":
             return self.Path
-        elif self.type == "cloned":
+        elif self.repo_type == "cloned":
             return REMOTES_DIR / self.name
 
     @property
@@ -647,7 +647,7 @@ class Repo(BaseDirectory):
             short_description=self.short_description,
             long_description=self.long_description,
             frozen=self.frozen,
-            type=self.type,
+            type=self.repo_type,
             url=self.url,
             git_metadata=(
                 self.git_metadata.model_dump() if self.git_metadata else None

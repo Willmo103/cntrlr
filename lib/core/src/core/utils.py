@@ -40,10 +40,11 @@ Dependencies
 - core.base: For file stat and path models
 - core.models: For file and git metadata models
 """
+
 # endregion
 # region Imports
+# import sys
 from datetime import datetime, timedelta, timezone
-import sys
 from pathlib import Path
 from typing import Optional, Union
 
@@ -285,8 +286,11 @@ def get_file_stat_model(file_path: Path) -> Union["BaseFileStat", "LinuxFileStat
         >>> print(stat_model)
         LinuxFileStatModel(...)
     """
-    from core.base import LinuxFileStat, MacOSFileStat, WindowsFileStat, BaseFileStat
+    from core.base import (
+        BaseFileStat,
+    )  # , LinuxFileStat, MacOSFileStat, WindowsFileStat,
     from os import stat as os_stat
+
     try:
         if isinstance(file_path, str):
             file_path = Path(file_path)
@@ -294,7 +298,7 @@ def get_file_stat_model(file_path: Path) -> Union["BaseFileStat", "LinuxFileStat
             raise FileNotFoundError(f"File not found: {file_path}")
         file_stat = os_stat(file_path)
 
-        system = sys.platform
+        # system = sys.platform
         # if system == "Darwin":
         #     return MacOSFileStat.model_validate(
         #         {
@@ -325,10 +329,12 @@ def get_file_stat_model(file_path: Path) -> Union["BaseFileStat", "LinuxFileStat
                 stat_key: getattr(file_stat, stat_key)
                 for stat_key in dir(file_stat)
                 if not stat_key.startswith("_")
-            },  from_attributes=True
+            },
+            from_attributes=True,
         )
     except Exception as e:
         raise RuntimeError(f"Error getting file stat for {file_path}: {e}") from e
+
 
 def get_path_model(file_path: Path) -> "PathModel":  # type: ignore  # noqa: F821
     """
@@ -361,7 +367,7 @@ def get_path_model(file_path: Path) -> "PathModel":  # type: ignore  # noqa: F82
     )
 
 
-def get_mime_type(file_path: Path) -> str | None:
+def get_mime_type(file_path: Path) -> str:
     """
     Get the MIME type of a file based on its extension.
 
@@ -377,10 +383,14 @@ def get_mime_type(file_path: Path) -> str | None:
         >>> get_mime_type(Path("image.jpg"))
         'image/jpeg'
     """
-    import mimetypes
+    try:
+        import mimetypes
 
-    mime_type, _ = mimetypes.guess_type(file_path.as_posix())
-    return mime_type
+        mime_type, _ = mimetypes.guess_type(file_path.as_posix(), strict=False)
+        if mime_type is None:
+            return "application/octet-stream"
+    except Exception as e:
+        raise RuntimeError(f"Error getting MIME type for file {file_path}") from e
 
 
 def BaseFileModel_from_Path(file_path: Path) -> "BaseFileModel":  # type: ignore  # noqa: F821

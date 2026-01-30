@@ -86,6 +86,9 @@ from .utils import (
     get_mime_type,
     get_path_model,
     is_markdown_formattable,
+    is_image_file,
+    is_data_file,
+    is_video_file,
 )
 
 # endregion
@@ -630,6 +633,26 @@ class BaseFileModel(BaseModel):
             f"{self.Path}{self.sha256}{self.stat_json.model_dump_json()}".encode()
         ).hexdigest()
 
+    @property
+    def has_md_formatting(self) -> bool:
+        """Check if the text file has Markdown formatting based on its suffix."""
+        return is_markdown_formattable(self.Path)
+
+    @property
+    def is_video(self) -> bool:
+        """Check if the file is a video based on its suffix."""
+        return is_video_file(self.Path)
+
+    @property
+    def is_image(self) -> bool:
+        """Check if the file is an image based on its suffix."""
+        return is_image_file(self.Path)
+
+    @property
+    def is_data_file(self) -> bool:
+        """Check if the file is a data file based on its suffix."""
+        return is_data_file(self.Path)
+
     def is_empty(self) -> bool:
         return self.stat_json.st_size == 0
 
@@ -644,18 +667,23 @@ class BaseFileModel(BaseModel):
         Returns:
             None
         """
-        if not file_path.exists() or not file_path.is_file():
-            raise FileNotFoundError(f"File not found: {file_path}")
-        return cls(
-            sha256=get_file_sha256(file_path),
-            stat_json=get_file_stat_model(file_path),
-            path_json=get_path_model(file_path),
-            mime_type=get_mime_type(file_path),
-            tags=[],
-            short_description=None,
-            long_description=None,
-            frozen=False,
-        )
+        try:
+            if isinstance(file_path, str):
+                file_path = Path(file_path).resolve()
+            if not file_path.exists() or not file_path.is_file():
+                raise FileNotFoundError(f"File not found: {file_path}")
+            return cls(
+                sha256=get_file_sha256(file_path),
+                stat_json=get_file_stat_model(file_path),
+                path_json=get_path_model(file_path),
+                mime_type=get_mime_type(file_path) or "application/octet-stream",
+                tags=[],
+                short_description=None,
+                long_description=None,
+                frozen=False,
+            )
+        except Exception as e:
+            raise ValueError(f"Error populating BaseFileModel: {e}")
 
     model_config = ConfigDict(
         arbitrary_types_allowed=True, check_fields=False, from_attributes=True
@@ -674,8 +702,10 @@ class BaseDirectory(BaseModel):
         frozen (bool): Indicates if the directory is frozen (immutable).
     """
 
-    stat_json: BaseFileStat = Field(..., description="File statistics model")
-    path_json: FilePath = Field(..., description="Path model of the file")
+    stat_json: Optional[
+        Union[BaseFileStat, LinuxFileStat, WindowsFileStat, MacOSFileStat]
+    ] = Field(None, description="File statistics model")
+    path_json: Optional[FilePath] = Field(None, description="Path model of the file")
     tags: Optional[list[str]] = Field(
         None, description="A list of tags associated with the file"
     )
@@ -738,15 +768,13 @@ class BaseDirectory(BaseModel):
             raise FileNotFoundError(f"Directory not found: {dir_path}")
         if not dir_path.is_dir():
             raise NotADirectoryError(f"Not a directory: {dir_path}")
-        if not issubclass(cls, BaseDirectory):
-            raise TypeError("cls must be a subclass of BaseDirectory")
+        # if not issubclass(cls, BaseDirectory):
+        #     raise TypeError("cls must be a subclass of BaseDirectory")
+        stat_json = get_file_stat_model(dir_path)
+        path_json = get_path_model(dir_path)
         instance = cls(
-            stat_json=get_file_stat_model(dir_path),
-            path_json=get_path_model(dir_path),
-            tags=[],
-            short_description=None,
-            long_description=None,
-            frozen=False,
+            stat_json=stat_json,
+            path_json=path_json,
         )
         return instance
 
@@ -844,8 +872,13 @@ class BaseTextFile(BaseFileModel):
         # super() call checks for file existence and base file validations
         # here I am checking the file's suffix against the constants.MD_EXTENSIONS_LIST
         # via the utility function is_markdown_formattable()
-        if not is_markdown_formattable(file_path):
-            raise ValueError(f"File is not a text file: {file_path}")
+        # if not is_markdown_formattable(file_path):
+        #     raise ValueError(f"File is not a text file: {file_path}")
+        # ---
+        # This was in error. I would have to add all sorts of extra extensions
+        # to the MD_EXT_EXREF list to make this work for all text files.
+        # So I am removing this check for now. and adding properties to the
+        # BaseFileMode
 
         with file_path.open("r", encoding="utf-8", errors="ignore") as f:
             lines = f.readlines()
