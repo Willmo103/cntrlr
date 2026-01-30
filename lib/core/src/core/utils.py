@@ -45,6 +45,7 @@ Dependencies
 # region Imports
 # import sys
 from datetime import datetime, timedelta, timezone
+from logging import Logger
 from pathlib import Path
 from typing import Optional, Union
 
@@ -58,7 +59,6 @@ from core.constants import (
     TZ_OFFSET,
     VIDEO_FORMAT_LIST,
 )
-
 
 # endregion
 # region General Utilities
@@ -285,7 +285,7 @@ def get_file_sha256(file_path: Path) -> str:
         raise RuntimeError(f"Error calculating SHA256 for file {file_path}: {e}") from e
 
 
-def get_file_stat_model(file_path: Path) -> Union["BaseFileStat", "LinuxFileStat", "MacOSFileStat", "WindowsFileStat"]:  # type: ignore  # noqa: F821
+def get_file_stat_model(file_path: Path, logger: Optional[Logger] = None) -> Union["BaseFileStat", "LinuxFileStat", "MacOSFileStat", "WindowsFileStat"]:  # type: ignore  # noqa: F821
     """
     Get the appropriate file stat model based on the operating system.
 
@@ -302,14 +302,20 @@ def get_file_stat_model(file_path: Path) -> Union["BaseFileStat", "LinuxFileStat
     """
     from os import stat as os_stat
 
+    logger = logger.getChild(__name__) if logger else None
+
     from core.base import (  # , LinuxFileStat, MacOSFileStat, WindowsFileStat,
         BaseFileStat,
     )
 
+    if logger:
+        logger.debug(f"Getting file stat for: {file_path}")
     try:
         if isinstance(file_path, str):
             file_path = Path(file_path)
         if not file_path.exists():
+            if logger:
+                logger.error(f"File not found: {file_path}")
             raise FileNotFoundError(f"File not found: {file_path}")
         file_stat = os_stat(file_path)
 
@@ -351,7 +357,7 @@ def get_file_stat_model(file_path: Path) -> Union["BaseFileStat", "LinuxFileStat
         raise RuntimeError(f"Error getting file stat for {file_path}: {e}") from e
 
 
-def get_path_model(file_path: Path) -> "PathModel":  # type: ignore  # noqa: F821
+def get_path_model(file_path: Path, logger: Optional[Logger] = None) -> "PathModel":  # type: ignore  # noqa: F821
     """
     Get the PathModel for a given file path.
 
@@ -367,22 +373,33 @@ def get_path_model(file_path: Path) -> "PathModel":  # type: ignore  # noqa: F82
     """
     from core.base import FilePath
 
-    return FilePath(
-        name=file_path.name,
-        suffix=file_path.suffix,
-        suffixes=file_path.suffixes,
-        stem=file_path.stem,
-        parent=str(file_path.parent),
-        parents=[str(p) for p in file_path.parents],
-        anchor=file_path.anchor,
-        drive=file_path.drive,
-        root=file_path.root,
-        parts=[p for p in file_path.parts],
-        is_absolute=file_path.is_absolute(),
-    )
+    logger = logger.getChild(__name__) if logger else None
+    if logger:
+        logger.debug(f"Getting path model for: {file_path}")
+    try:
+        if isinstance(file_path, str):
+            file_path = Path(file_path)
+        file_path.resolve()
+        return FilePath(
+            name=file_path.name,
+            suffix=file_path.suffix,
+            suffixes=file_path.suffixes,
+            stem=file_path.stem,
+            parent=str(file_path.parent),
+            parents=[str(p) for p in file_path.parents],
+            anchor=file_path.anchor,
+            drive=file_path.drive,
+            root=file_path.root,
+            parts=[p for p in file_path.parts],
+            is_absolute=file_path.is_absolute(),
+        )
+    except Exception as e:
+        if logger:
+            logger.error(f"Error getting path model for {file_path}: {e}")
+        raise RuntimeError(f"Error getting path model for {file_path}: {e}") from e
 
 
-def get_mime_type(file_path: Path) -> str:
+def get_mime_type(file_path: Path, logger: Optional[Logger] = None) -> str:
     """
     Get the MIME type of a file based on its extension.
 
@@ -398,7 +415,10 @@ def get_mime_type(file_path: Path) -> str:
         >>> get_mime_type(Path("image.jpg"))
         'image/jpeg'
     """
+    logger = logger.getChild(__name__) if logger else None
     try:
+        if logger:
+            logger.debug(f"Getting MIME type for: {file_path}")
         import mimetypes
 
         mime_type, _ = mimetypes.guess_type(file_path.as_posix())
@@ -406,10 +426,12 @@ def get_mime_type(file_path: Path) -> str:
             return "application/octet-stream"
         return mime_type
     except Exception as e:
+        if logger:
+            logger.error(f"Error getting MIME type for {file_path}: {e}")
         raise RuntimeError(f"Error getting MIME type for file {file_path}") from e
 
 
-def BaseFileModel_from_Path(file_path: Path) -> "BaseFileModel":  # type: ignore  # noqa: F821
+def BaseFileModel_from_Path(file_path: Path, logger: Optional[Logger] = None) -> "BaseFileModel":  # type: ignore  # noqa: F821
     """
     Create a BaseFileModel instance from a given file path.
 
@@ -429,15 +451,20 @@ def BaseFileModel_from_Path(file_path: Path) -> "BaseFileModel":  # type: ignore
     """
     from core.base import BaseFileModel
 
+    logger = logger.getChild(__name__) if logger else None
+    if logger:
+        logger.debug(f"Creating BaseFileModel from path: {file_path}")
     try:
         return BaseFileModel.populate(file_path)
     except Exception as e:
+        if logger:
+            logger.error(f"Error creating BaseFileModel from path {file_path}: {e}")
         raise RuntimeError(
             f"Error creating BaseFileModel from path {file_path}: {e}"
         ) from e
 
 
-def ImageFileModel_from_Path(file_path: Path) -> "ImageFile":  # type: ignore  # noqa: F821
+def ImageFileModel_from_Path(file_path: Path, logger: Optional[Logger] = None) -> "ImageFile":  # type: ignore  # noqa: F821
     """
     Create an ImageFileModel instance from a given file path.
 
@@ -457,15 +484,20 @@ def ImageFileModel_from_Path(file_path: Path) -> "ImageFile":  # type: ignore  #
     """
     from core.models.file_system.image_file import ImageFile
 
+    logger = logger.getChild(__name__) if logger else None
+    if logger:
+        logger.debug(f"Creating ImageFileModel from path: {file_path}")
     try:
         return ImageFile.populate(file_path)
     except Exception as e:
+        if logger:
+            logger.error(f"Error creating ImageFileModel from path {file_path}: {e}")
         raise RuntimeError(
             f"Error creating ImageFileModel from path {file_path}: {e}"
         ) from e
 
 
-def VideoFileModel_from_Path(file_path: Path) -> "VideoFile":  # type: ignore  # noqa: F821
+def VideoFileModel_from_Path(file_path: Path, logger: Optional[Logger] = Nogger) -> "VideoFile":  # type: ignore  # noqa: F821
     """
     Create a VideoFileModel instance from a given file path.
 
@@ -485,15 +517,21 @@ def VideoFileModel_from_Path(file_path: Path) -> "VideoFile":  # type: ignore  #
     """
     from core.models.file_system.video_file import VideoFile
 
+    logger = logger.getChild(__name__) if logger else None
+    if logger:
+        logger.debug(f"Creating VideoFileModel from path: {file_path}")
+
     try:
         return VideoFile.populate(file_path)
     except Exception as e:
+        if logger:
+            logger.error(f"Error creating VideoFileModel from path {file_path}: {e}")
         raise RuntimeError(
             f"Error creating VideoFileModel from path {file_path}: {e}"
         ) from e
 
 
-def SqliteFileModel_from_Path(file_path: Path) -> "SQLiteFile":  # type: ignore  # noqa: F821
+def SqliteFileModel_from_Path(file_path: Path, logger: Optional[Logger] = None) -> "SQLiteFile":  # type: ignore  # noqa: F821
     """
     Create a SQLiteFileModel instance from a given file path.
 
@@ -513,15 +551,21 @@ def SqliteFileModel_from_Path(file_path: Path) -> "SQLiteFile":  # type: ignore 
     """
     from core.models.file_system import SQLiteFile
 
+    logger = logger.getChild(__name__) if logger else None
+    if logger:
+        logger.debug(f"Creating SQLiteFileModel from path: {file_path}")
+
     try:
         return SQLiteFile.populate(file_path)
     except Exception as e:
+        if logger:
+            logger.error(f"Error creating SQLiteFileModel from path {file_path}: {e}")
         raise RuntimeError(
             f"Error creating SQLiteFileModel from path {file_path}: {e}"
         ) from e
 
 
-def AudioFileModel_from_Path(file_path: Path) -> "AudioFile":  # type: ignore  # noqa: F821
+def AudioFileModel_from_Path(file_path: Path, logger: Optional[Logger] = None) -> "AudioFile":  # type: ignore  # noqa: F821
     """
     Create an AudioFileModel instance from a given file path.
 
@@ -538,193 +582,15 @@ def AudioFileModel_from_Path(file_path: Path) -> "AudioFile":  # type: ignore  #
     """
     from core.models.file_system.audio_file import AudioFile
 
+    logger = logger.getChild(__name__) if logger else None
     try:
         return AudioFile.populate(file_path)
     except Exception as e:
+        if logger:
+            logger.error(f"AudioFileModel_from_Path not implemented: {e}")
         raise RuntimeError(
             f"Error creating AudioFileModel from path {file_path}: {e}"
         ) from e
-
-
-# endregion
-# region Git Utilities
-# Utility functions for git repository operations.
-
-
-def get_git_metadata(repo_path: Path) -> Optional["GitMetadata"]:  # type: ignore  # noqa: F821
-    """
-    Extract git metadata from repository.
-
-    Arguments:
-        repo_path (Path): The path to the git repository.
-
-    Returns:
-        Optional[GitMetadata]: The git metadata if the path is a valid git repository, otherwise
-        None.
-
-    Example:
-        >>> metadata = get_git_metadata(Path("/path/to/repo"))
-        >>> print(metadata)
-        GitMetadata(...)
-    """
-    from core.models.repo import GitCommit, GitMetadata
-
-    if not (repo_path / ".git").exists() or not repo_path.is_dir():
-        return None
-    try:
-        repo = git.Repo(repo_path)
-
-        # Get remotes
-        remotes = {remote.name: remote.url for remote in repo.remotes}
-
-        # Get current branch
-        try:
-            current_branch = repo.active_branch.name
-        except TypeError:
-            current_branch = "HEAD (detached)"
-
-        # Get all branches
-        branches = [branch.name for branch in repo.branches]
-
-        # Get commit info
-        try:
-            latest_commit = repo.head.commit
-            commit_info = GitCommit(
-                hash=latest_commit.hexsha[:8],
-                message=latest_commit.message.strip(),
-                author=str(latest_commit.author),
-                date=latest_commit.committed_datetime.isoformat(),
-            )
-        except Exception:
-            commit_info = {"error": "Unable to get commit info"}
-
-        # Check for uncommitted changes
-        is_dirty = repo.is_dirty()
-        untracked_files = len(repo.untracked_files)
-
-        return GitMetadata(
-            remotes=remotes,
-            current_branch=current_branch,
-            branches=branches,
-            latest_commit=commit_info,
-            uncommitted_changes=is_dirty,
-            untracked_files=untracked_files,
-            commit_history=get_all_commits(repo_path, max_count=10) or [],
-        )
-    except Exception:
-        return None
-
-
-def get_latest_commit(repo_path: Path) -> Optional["GitCommit"]:  # type: ignore  # noqa: F821
-    """
-    Get the latest commit information from the git repository.
-
-    Arguments:
-        repo_path (Path): The path to the git repository.
-
-    Returns:
-        Optional[GitCommit]: The latest commit information if the path is a valid git repository, otherwise None.
-
-    Example:
-        >>> latest_commit = get_latest_commit(Path("/path/to/repo"))
-        >>> print(latest_commit)
-        GitCommit(...)
-    """
-    from core.models.repo import GitCommit
-
-    if not (repo_path / ".git").exists() or not repo_path.is_dir():
-        return None
-    try:
-        repo = git.Repo(repo_path)
-        latest_commit = repo.head.commit
-        return GitCommit(
-            hash=latest_commit.hexsha[:8],
-            message=latest_commit.message.strip(),
-            author=str(latest_commit.author),
-            date=latest_commit.committed_datetime.isoformat(),
-        )
-    except Exception:
-        return None
-
-
-def get_all_commits(repo_path: Path, max_count: int = 10) -> Optional[list["GitCommit"]]:  # type: ignore  # noqa: F821
-    """Get a list of commits from the git repository."""
-    from core.models.repo import GitCommit
-
-    if not (repo_path / ".git").exists() or not repo_path.is_dir():
-        return None
-    try:
-        repo = git.Repo(repo_path)
-        commits = []
-        for commit in repo.iter_commits(max_count=max_count):
-            commits.append(
-                GitCommit(
-                    hash=commit.hexsha[:8],
-                    message=commit.message.strip(),
-                    author=str(commit.author),
-                    date=commit.committed_datetime.isoformat(),
-                )
-            )
-        return commits
-    except Exception:
-        return None
-
-
-def get_repo_name(repo_path: Path) -> Optional[str]:
-    """
-    Get the repository name from the git repository.
-
-    Arguments:
-        repo_path (Path): The path to the git repository.
-
-    Returns:
-        Optional[str]: The repository name if the path is a valid git repository, otherwise None.
-
-    Example:
-        >>> repo_name = get_repo_name(Path("/tmp/cntrlr"))
-        >>> print(repo_name)
-        cntrlr
-    """
-    if not (repo_path / ".git").exists() or not repo_path.is_dir():
-        return None
-    try:
-        repo = git.Repo(repo_path)
-        return repo.working_tree_dir.split("/")[-1]
-    except Exception:
-        return None
-
-
-def clone_repository(
-    repo_url: str, clone_path: Path, branch: Optional[str] = None
-) -> Path:
-    """
-    Clone a git repository to the specified or temporary path.
-
-    Arguments:
-        repo_url (str): The URL of the git repository to clone.
-        clone_path (Path): The local path to clone the repository into. If None, a temporary directory is used.
-        branch: (Optional) The branch to clone. If None, the default branch is used.
-
-    Raises:
-        Exception: If cloning fails.
-
-    Returns:
-        Path: The path to the cloned repository.
-
-    Example:
-        >>> from core.utils import clone_repository
-        >>> repo_path = clone_repository("https://Github.com/Willmo103/cntrlr.git", Path("/tmp/cntrlr"))
-        >>> print(repo_path)
-        C:/tmp/cntrlr
-    """
-    try:
-        if branch:
-            git.Repo.clone_from(repo_url, clone_path, branch=branch)
-        else:
-            git.Repo.clone_from(repo_url, clone_path)
-        return clone_path
-    except Exception as e:
-        raise Exception(f"Failed to clone repository: {e}")
 
 
 # endregion
@@ -792,6 +658,214 @@ def timestamp() -> float:
         1769455692.230862
     """
     return get_time().timestamp()
+
+
+# endregion
+# region Path Utilities
+
+
+def apply_default_ignore_filters(
+    paths: list[Path],
+) -> list[Path]:
+    """
+    Filter a list of file paths using default ignore patterns.
+
+    Args:
+        paths (list[Path]): The list of file paths to filter.
+
+    Returns:
+        list[Path]: The filtered list of file paths.
+
+    Example:
+        >>> from core.utils import apply_default_ignore_filters
+        >>> paths = [Path("file1.txt"), Path("file2.log"), Path("temp/file3.txt")]
+        >>> filtered_paths = apply_default_ignore_filters(paths)
+        >>> for p in filtered_paths:
+        ...     print(p)
+        file1.txt
+    """
+    from core.constants import IGNORE_PARTS, IGNORE_EXTENSIONS
+    import fnmatch
+
+    filtered_paths = []
+    for path in paths:
+        ignore = False
+        for part in path.parts:
+            if any(fnmatch.fnmatch(part, pattern) for pattern in IGNORE_PARTS):
+                ignore = True
+                break
+        if ignore:
+            continue
+        if path.suffix.lower() in IGNORE_EXTENSIONS:
+            continue
+        filtered_paths.append(path)
+
+    return filtered_paths
+
+
+def git_ls_files(path: Path, logger: Optional[Logger] = None) -> list[Path]:
+    """
+    List all files tracked by git in the given repository path.
+
+    Args:
+        path (Path): The repository path to list git-tracked files from.
+
+    Returns:
+        list[Path]: A list of git-tracked file paths.
+
+    Example:
+        >>> from core.utils import git_ls_files
+        >>> git_files = git_ls_files(Path("/home/user/myrepo"))
+        >>> for f in git_files:
+        ...     print(f)
+        /home/user/myrepo/file1.txt
+        /home/user/myrepo/subdir/file2.txt
+    """
+    logger = logger.getChild(__name__) if logger else None
+    try:
+        if not path.exists() or not path.is_dir():
+            raise ValueError(f"Path does not exist or is not a directory: {path}")
+        try:
+            repository = git.Repo(path, search_parent_directories=True)
+            if logger:
+                logger.debug(f"Opened git repository at {repository.working_tree_dir}")
+        except Exception as e:
+            if logger:
+                logger.error(f"Error opening git repository at {path}: {e}")
+            return []
+        git_root = Path(repository.working_tree_dir)
+        git_files = repository.git.ls_files().splitlines()
+        return [git_root / Path(f) for f in git_files if (git_root / f).exists()]
+    except Exception as e:
+        if logger:
+            logger.error(f"Error listing git files in repository {path}: {e}")
+        return []
+
+
+def ls_files(path: Path, logger: Optional[Logger] = None) -> list[Path]:
+    """
+    List all files in the given directory path recursively.
+
+    Args:
+        path (Path): The directory path to list files from.
+
+    Returns:
+        list[Path]: A list of file paths.
+
+    Example:
+        >>> from core.utils import ls_files
+        >>> files = ls_files(Path("/home/user/documents"))
+        >>> for f in files:
+        ...     print(f)
+        /home/user/documents/file1.txt
+        /home/user/documents/subdir/file2.txt
+        ...
+    """
+    logger = logger.getChild(__name__) if logger else None
+    try:
+        path = path.resolve()
+        return [p for p in path.rglob("*") if p.is_file()]
+    except Exception as e:
+        if logger:
+            logger.error(f"Error listing files in directory {path}: {e}")
+        return []
+
+
+def derive_relative_paths(
+    base_path: Path, paths: list[Path], logger: Optional[Logger] = None
+) -> list[Path]:
+    """
+    Derive relative paths from a base path for a list of file paths.
+
+    Args:
+        base_path (Path): The base path to derive relative paths from.
+        paths (list[Path]): The list of file paths to convert to relative paths.
+        logger (Optional[Logger]): An optional logger for logging warnings.
+
+    Returns:
+        list[Path]: A list of relative file paths.
+
+    Example:
+        >>> from core.utils import derive_relative_paths
+        >>> base = Path("/home/user/documents")
+        >>> paths = [Path("/home/user/documents/file1.txt"), Path("/home/user/documents/subdir/file2.txt")]
+        >>> relative_paths = derive_relative_paths(base, paths)
+        >>> for rp in relative_paths:
+        ...     print(rp)
+        file1.txt
+        subdir/file2.txt
+    """
+    logger = logger.getChild(__name__) if logger else None
+    try:
+        relative_paths = []
+        for path in paths:
+            try:
+                relative_path = path.relative_to(base_path)
+                relative_paths.append(relative_path)
+            except ValueError:
+                if logger:
+                    logger.warning(f"Path {path} is not under base path {base_path}")
+                relative_paths.append(path)
+        return relative_paths
+    except Exception as e:
+        if logger:
+            logger.error(f"Error deriving relative paths from base {base_path}: {e}")
+        return []
+
+
+def render_tree_string(paths: list[Path], logger: Optional[Logger] = None) -> str:
+    """
+    Render a tree-like string representation of the given file paths.
+
+    Args:
+        paths (list[Path]): The list of file paths to render.
+        logger (Optional[Logger]): An optional logger for logging warnings.
+
+    Returns:
+        str: A tree-like string representation of the file paths.
+
+    Example:
+        >>> from core.utils import render_tree_string
+        >>> paths = [Path("dir1/file1.txt"), Path("dir1/dir2/file2.txt"), Path("file3.txt")]
+        >>> tree_str = render_tree_string(paths)
+        >>> print(tree_str)
+        dir1
+        ├── file1.txt
+        └── dir2
+            └── file2.txt
+        file3.txt
+    """
+    from collections import defaultdict
+
+    logger = logger.getChild(__name__) if logger else None
+
+    try:
+        tree = lambda: defaultdict(tree)  # noqa: E731
+        file_tree = tree()
+
+        for path in paths:
+            parts = path.parts
+            current_level = file_tree
+            for part in parts:
+                current_level = current_level[part]
+
+        def render_tree(d, prefix=""):
+            lines = []
+            entries = list(d.items())
+            for index, (key, subtree) in enumerate(entries):
+                connector = "└── " if index == len(entries) - 1 else "├── "
+                lines.append(f"{prefix}{connector}{key}")
+                if subtree:
+                    extension = "    " if index == len(entries) - 1 else "│   "
+                    lines.extend(render_tree(subtree, prefix + extension))
+            return lines
+
+        tree_lines = render_tree(file_tree)
+        return "\n".join(tree_lines).lstrip("├── ").lstrip("└── ")
+    except Exception as e:
+        if logger:
+            logger.error(f"Error rendering tree string: {e}")
+        return ""
 
 
 # endregion

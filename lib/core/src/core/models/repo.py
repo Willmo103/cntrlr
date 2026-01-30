@@ -95,12 +95,11 @@ from core.config.base import REMOTES_DIR
 from core.database import Base
 from core.models.file_system import BaseDirectory
 from core.utils import (
-    get_git_metadata,
+    get_all_commits,
     is_binary_file,
     is_image_file,
     is_video_file,
 )
-
 
 # endregion
 # region Pydantic Models for Git Metadata
@@ -322,8 +321,7 @@ class RepoFileEntity(Base):
 # --- TRIGGER LOGIC FOR FileLinesModel ---
 # Expects JSON: { "lines": [ {"content": "...", "line_number": 1}, ... ] }
 
-repo_shred_lines_func = DDL(
-    """
+repo_shred_lines_func = DDL("""
 CREATE OR REPLACE FUNCTION process_repo_file_lines()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -353,15 +351,12 @@ BEGIN
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
-"""
-)
-setup_repo_file_lines_trigger = DDL(
-    """
+""")
+setup_repo_file_lines_trigger = DDL("""
 CREATE TRIGGER repo_trigger_shred_lines
 AFTER INSERT OR UPDATE OF lines_json ON repo_files
 FOR EACH ROW EXECUTE FUNCTION process_repo_file_lines();
-"""
-)
+""")
 
 
 event.listen(RepoFileEntity.__table__, "after_create", repo_shred_lines_func)  # noqa
@@ -521,6 +516,70 @@ class RepoFile(BaseTextFile):
         if not isinstance(v, str):
             raise ValueError("repo_id must be a string")
         return v
+
+
+def get_git_metadata(repo_path: Path) -> Optional["GitMetadata"]:  # type: ignore  # noqa: F821
+    """
+    Extract git metadata from repository.
+
+    Arguments:
+        repo_path (Path): The path to the git repository.
+
+    Returns:
+        Optional[GitMetadata]: The git metadata if the path is a valid git repository, otherwise
+        None.
+
+    Example:
+        >>> metadata = get_git_metadata(Path("/path/to/repo"))
+        >>> print(metadata)
+        GitMetadata(...)
+    """
+    from core.models.repo import GitCommit, GitMetadata
+
+    if not (repo_path / ".git").exists() or not repo_path.is_dir():
+        return None
+    try:
+        repo = git.Repo(repo_path)
+
+        # Get remotes
+        remotes = {remote.name: remote.url for remote in repo.remotes}
+
+        # Get current branch
+        try:
+            current_branch = repo.active_branch.name
+        except TypeError:
+            current_branch = "HEAD (detached)"
+
+        # Get all branches
+        branches = [branch.name for branch in repo.branches]
+
+        # Get commit info
+        try:
+            latest_commit = repo.head.commit
+            commit_info = GitCommit(
+                hash=latest_commit.hexsha[:8],
+                message=latest_commit.message.strip(),
+                author=str(latest_commit.author),
+                date=latest_commit.committed_datetime.isoformat(),
+            )
+        except Exception:
+            commit_info = {"error": "Unable to get commit info"}
+
+        # Check for uncommitted changes
+        is_dirty = repo.is_dirty()
+        untracked_files = len(repo.untracked_files)
+
+        return GitMetadata(
+            remotes=remotes,
+            current_branch=current_branch,
+            branches=branches,
+            latest_commit=commit_info,
+            uncommitted_changes=is_dirty,
+            untracked_files=untracked_files,
+            commit_history=get_all_commits(repo_path, max_count=10) or [],
+        )
+    except Exception:
+        return None
 
 
 class Repo(BaseDirectory):
