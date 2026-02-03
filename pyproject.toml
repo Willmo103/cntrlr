@@ -18,6 +18,7 @@ dependencies = [
 members = [
     "lib/*",
     "apps/controller",
+    "apps/converter",
 ]
 
 [tool.uv.sources]

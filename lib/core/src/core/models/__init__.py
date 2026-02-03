@@ -43,8 +43,8 @@ Design Notes:
 - Pydantic models provide validation, serialization, and business logic
 - All imports use noqa: F401 to suppress unused import warnings in this aggregation module
 """
+
 from .article import Article, ArticleEntity  # noqa: F401
-from .conversion_result import ConversionResult, ConversionResultEntity  # noqa: F401
 from .embedding import Embedding, EmbeddingEntity  # noqa: F401
 
 # region Imports
@@ -99,7 +99,6 @@ from .repo import (  # noqa: F401
 from .tts import TTSHistory, TTSHistoryEntity  # noqa: F401
 from .web_fetch_content import WebFetchContent, WebFetchContentEntity  # noqa: F401
 
-
 # endregion
 
 entities = [
@@ -124,7 +123,6 @@ Entity classes for database persistence.
 
 models = [
     "Article",
-    "ConversionResult",
     "Embedding",
     "LogEntry",
     "NetworkHost",
