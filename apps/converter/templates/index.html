@@ -1,0 +1,53 @@
+{% extends 'base.html' %} {% block content %}
+<div class="flex h-screen">
+  <!-- Sidebar -->
+  <div
+    id="sidebar"
+    class="sidebar bg-gray-200 dark:bg-gray-800 p-4 retro-border flex flex-col"
+  >
+    <button
+      onclick="toggleSidebar()"
+      class="retro-btn bg-blue-500 text-white px-4 py-2 mb-4"
+    >
+      Toggle Sidebar
+    </button>
+    <nav class="flex-grow">
+      <ul>
+        <li class="mb-2">
+          <a
+            href="#"
+            class="block px-2 py-1 rounded hover:bg-gray-300 dark:hover:bg-gray-700"
+            >Home</a
+          >
+        </li>
+        <li class="mb-2">
+          <a
+            href="#"
+            class="block px-2 py-1 rounded hover:bg-gray-300 dark:hover:bg-gray-700"
+            >Convert</a
+          >
+        </li>
+        <li class="mb-2">
+          <a
+            href="#"
+            class="block px-2 py-1 rounded hover:bg-gray-300 dark:hover:bg-gray-700"
+            >Settings</a
+          >
+        </li>
+      </ul>
+    </nav>
+    <button
+      onclick="toggleTheme()"
+      class="retro-btn bg-green-500 text-white px-4 py-2 mt-auto"
+    >
+      Toggle Theme
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <div class="flex-grow p-6">
+    <h1 class="text-3xl font-bold mb-4">Welcome to the Converter App</h1>
+    <p class="mb-4">Use the sidebar to navigate through the app.</p>
+  </div>
+</div>
+{% endblock %}

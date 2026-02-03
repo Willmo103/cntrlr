@@ -1,20 +1,17 @@
 # TODO: Test UI for this module
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
-from config import app_settings
+from config import app_root
 
-templates = Jinja2Templates(
-    directory=str(app_settings.app_root / "apps" / "converter" / "templates")
-)
-
+templates = Jinja2Templates(directory=(app_root / "templates").resolve().as_posix())
 
 ui_router = APIRouter(prefix="/ui", tags=["ui"])
 
 
-@ui_router.get("/", summary="Converter UI Home")
-async def converter_ui_home(request):
-    """Renders the home page for the Converter UI."""
+@ui_router.get("/", summary="UI Root")
+async def ui_root(request: Request):
+    """Root endpoint for the UI."""
     return templates.TemplateResponse(
-        "converter_home.html",
-        {"request": request, "app_name": "Converter UI"},
+        "index.html",
+        {"request": request, "message": "Converter UI is operational."},
     )
