@@ -6,11 +6,11 @@ authors = [
     { name = "WIll Morris", email = "88165849+Willmo103@users.noreply.github.com" }
 ]
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 dependencies = [
     "core",
-    "rich>=14.3.1",
-    "typer>=0.21.1",
+    "rich>=13.0.0",
+    "typer>=0.12.5,<0.13.0",
 ]
 
 
