@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Converter App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "teepee-tan": "#c4a77d",
+              "teepee-brown": "#8b7355",
+              "muddy-brown": "#5c4a3d",
+              "earth-cream": "#f5e6d3",
+              "retro-orange": "#ff6b35",
+              "retro-blue": "#00b4d8",
+              "dark-earth": "#2d2416",
+            },
+            borderRadius: {
+              retro: "2rem",
+              pill: "9999px",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .sidebar {
+        transition: width 0.3s ease;
+      }
+      .sidebar.collapsed {
+        width: 4rem;
+      }
+      .sidebar:not(.collapsed) {
+        width: 16rem;
+      }
+      .retro-border {
+        border-radius: 1.5rem;
+      }
+      .retro-btn {
+        border-radius: 9999px;
+        transition: all 0.2s;
+      }
+      .retro-btn:hover {
+        transform: scale(1.05);
+      }
+      body {
+        font-family: "Segoe UI", system-ui, sans-serif;
+      }
+      .dark body {
+        background-color: #2d2416;
+        color: #f5e6d3;
+      }
+      .light body {
+        background-color: #f5e6d3;
+        color: #2d2416;
+      }
+    </style>
+    <script>
+      function toggleTheme() {
+        document.documentElement.classList.toggle("dark");
+        localStorage.setItem(
+          "theme",
+          document.documentElement.classList.contains("dark")
+            ? "dark"
+            : "light",
+        );
+      }
+      function toggleSidebar() {
+        document.getElementById("sidebar").classList.toggle("collapsed");
+      }
+      if (
+        localStorage.getItem("theme") === "dark" ||
+        (!localStorage.getItem("theme") &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches)
+      ) {
+        document.documentElement.classList.add("dark");
+      }
+    </script>
+  </head>
+  <body>
+    {% block content %}{% endblock %}
+  </body>
+</html>

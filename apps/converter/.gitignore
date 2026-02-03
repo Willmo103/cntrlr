@@ -1,0 +1,5 @@
+storage/input/*
+storage/converted/*
+logs/*
+!.gitkeep
+

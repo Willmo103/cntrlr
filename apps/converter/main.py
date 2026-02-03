@@ -2,7 +2,8 @@ import time
 
 from fastapi import FastAPI
 
-from routes import conversion_router, logger
+from routes.api import conversion_api
+from logger import api_settings, logger
 from starlette.middleware.cors import CORSMiddleware
 
 uptime_start = time.time()
@@ -15,13 +16,14 @@ try:
         version="1.0.0",
     )
     cors = CORSMiddleware(
+        api,
         allow_origins=["*"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
     api.add_middleware(cors)
-    api.include_router(conversion_router)
+    api.include_router(conversion_api)
     logger.info("Converter API initialized.")
 
     @api.get("/")
@@ -45,3 +47,10 @@ except Exception as e:
         f"Failed to initialize Converter API: {e}", exc_info=True, stack_info=True
     )
     raise e
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(api, host=api_settings.host, port=api_settings.port)
+    logger.info(f"Starting Converter API on {api_settings.host}:{api_settings.port}")

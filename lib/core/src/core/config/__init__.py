@@ -81,7 +81,6 @@ from core.config.base import APP_ROOT, TTS_MODELS_DIR
 from core.config.factory import get_settings  # noqa: F401  This is used externally
 from core.config.factory import FactoryBaseSettings
 
-
 # endregion
 # region ControllerAPISettings Class
 
@@ -128,7 +127,7 @@ class ConverterAPISettings(FactoryBaseSettings):
         description="Port for the Converter API server.",
     )
     log_level: str = Field(
-        default="debug",
+        default="DEBUG",
         alias="CONVERTER_API_LOG_LEVEL",
         description="Log level for the Converter API server.",
     )

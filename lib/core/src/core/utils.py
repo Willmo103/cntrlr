@@ -497,7 +497,7 @@ def ImageFileModel_from_Path(file_path: Path, logger: Optional[Logger] = None) -
         ) from e
 
 
-def VideoFileModel_from_Path(file_path: Path, logger: Optional[Logger] = Nogger) -> "VideoFile":  # type: ignore  # noqa: F821
+def VideoFileModel_from_Path(file_path: Path, logger: Optional[Logger] = None) -> "VideoFile":  # type: ignore  # noqa: F821
     """
     Create a VideoFileModel instance from a given file path.
 
