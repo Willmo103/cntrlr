@@ -1,7 +1,7 @@
 import logging
 from logging import Logger as T_Logger
 from logging.config import dictConfig
-from config import INPUT_STORAGE_PATH, app_root, api_settings
+from .config import INPUT_STORAGE_PATH, app_root, api_settings
 from pythonjsonlogger.json import JsonFormatter  # type: ignore # noqa F401
 
 __html_storage_path__ = INPUT_STORAGE_PATH / "html"

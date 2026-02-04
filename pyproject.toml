@@ -8,11 +8,19 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "controller",
+    "converter",
     "core",
     "rich>=13.0.0",
     "typer>=0.12.5,<0.13.0",
 ]
 
+[tool.uv]
+package = true
+
+[project.scripts]
+converter = "converter.main:entry"
+controller = "controller.main:main"
 
 [tool.uv.workspace]
 members = [
@@ -23,6 +31,8 @@ members = [
 
 [tool.uv.sources]
 core = { workspace = true }
+converter = { workspace = true }
+controller = { workspace = true }
 
 # tools
 [tool.black]
@@ -65,3 +75,7 @@ dev = [
     "isort>=7.0.0",
     "pytest>=9.0.2",
 ]
+
+[build-system]
+requires = ["uv_build>=0.9.26,<0.10.0"]
+build-backend = "uv_build"

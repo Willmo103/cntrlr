@@ -1,9 +1,9 @@
 # TODO: Test UI for this module
+from pathlib import Path
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
-from config import app_root
 
-templates = Jinja2Templates(directory=(app_root / "templates").resolve().as_posix())
+templates = Jinja2Templates(directory=(Path(__file__).parent.parent / "templates").resolve().as_posix())
 
 ui_router = APIRouter(prefix="/ui", tags=["ui"])
 

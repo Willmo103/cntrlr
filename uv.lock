@@ -171,8 +171,10 @@ wheels = [
 [[package]]
 name = "cntrlr"
 version = "0.1.2"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
+    { name = "controller" },
+    { name = "converter" },
     { name = "core" },
     { name = "rich" },
     { name = "typer" },
@@ -187,6 +189,8 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "controller", editable = "apps/controller" },
+    { name = "converter", editable = "apps/converter" },
     { name = "core", editable = "lib/core" },
     { name = "rich", specifier = ">=13.0.0" },
     { name = "typer", specifier = ">=0.12.5,<0.13.0" },
@@ -223,12 +227,18 @@ wheels = [
 [[package]]
 name = "controller"
 version = "0.1.0"
-source = { virtual = "apps/controller" }
+source = { editable = "apps/controller" }
+dependencies = [
+    { name = "core" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "core", editable = "lib/core" }]
 
 [[package]]
 name = "converter"
 version = "0.1.0"
-source = { virtual = "apps/converter" }
+source = { editable = "apps/converter" }
 dependencies = [
     { name = "core" },
     { name = "docling" },

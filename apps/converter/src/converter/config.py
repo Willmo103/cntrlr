@@ -16,7 +16,7 @@ from core.config import get_settings, ConverterAPISettings
 
 app_root = Path(
     __file__
-).parent.resolve()  # The root of the application directory stays local to the converter app for Docker and modularity.
+).parent.parent.parent.resolve()  # The root of the application directory stays local to the converter app for Docker and modularity.
 """The root directory of the Converter application."""
 
 

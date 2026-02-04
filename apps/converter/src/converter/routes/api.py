@@ -1,4 +1,4 @@
-from logger import logger as _logger
+from ..logger import logger as _logger
 
 # from core.models.conversion_result import ConversionResultEntity, ConversionResult
 from fastapi import APIRouter, HTTPException, Request

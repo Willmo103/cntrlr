@@ -2,10 +2,10 @@ import time
 
 from fastapi import FastAPI
 
-from logger import api_settings, logger
+from .logger import api_settings, logger
 from fastapi.middleware.cors import CORSMiddleware
-from routes.api import conversion_api
-from routes.ui import ui_router
+from .routes.api import conversion_api
+from .routes.ui import ui_router
 
 uptime_start = time.time()
 app: FastAPI = None
@@ -52,8 +52,18 @@ except Exception as e:
     raise e
 
 
-if __name__ == "__main__":
+def entry():
+    """Entry point for running the Converter application."""
     import uvicorn
 
-    logger.info(f"Starting Converter API on {api_settings.host}:{api_settings.port}")
-    uvicorn.run(app, host=api_settings.host, port=api_settings.port)
+    uvicorn.run(
+        "converter.main:app",
+        host=api_settings.host,
+        port=api_settings.port,
+        log_level=api_settings.log_level.lower(),
+        reload=False,
+    )
+
+
+if __name__ == "__main__":
+    entry()

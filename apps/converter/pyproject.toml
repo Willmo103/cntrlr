@@ -1,7 +1,7 @@
 [project]
 name = "converter"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.1.1"
+description = "Converter application for CNTRLR package."
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
 dependencies = [
@@ -14,5 +14,12 @@ dependencies = [
     "uvicorn>=0.40.0",
 ]
 
+[project.scripts]
+converter = "converter.main:entry"
+
 [tool.uv.sources]
 core = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.9.26,<0.10.0"]
+build-backend = "uv_build"
