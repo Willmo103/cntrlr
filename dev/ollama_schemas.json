@@ -1,0 +1,127 @@
+[
+    {
+        "ChatResponse": {
+            "message": "<class 'ollama._types.Message'>",
+            "logprobs": "typing.Optional[typing.Sequence[ollama._types.Logprob]]"
+        }
+    },
+    {
+        "EmbeddingsResponse": {
+            "embedding": "typing.Sequence[float]"
+        }
+    },
+    {
+        "EmbedResponse": {
+            "embeddings": "typing.Sequence[typing.Sequence[float]]"
+        }
+    },
+    {
+        "GenerateResponse": {
+            "response": "<class 'str'>",
+            "thinking": "typing.Optional[str]",
+            "context": "typing.Optional[typing.Sequence[int]]",
+            "logprobs": "typing.Optional[typing.Sequence[ollama._types.Logprob]]"
+        }
+    },
+    {
+        "Image": {
+            "value": "typing.Union[str, bytes, pathlib._local.Path]"
+        }
+    },
+    {
+        "ListResponse": {
+            "models": "typing.Sequence[ollama._types.ListResponse.Model]"
+        }
+    },
+    {
+        "Message": {
+            "role": "<class 'str'>",
+            "content": "typing.Optional[str]",
+            "thinking": "typing.Optional[str]",
+            "images": "typing.Optional[typing.Sequence[ollama._types.Image]]",
+            "tool_name": "typing.Optional[str]",
+            "tool_calls": "typing.Optional[typing.Sequence[ollama._types.Message.ToolCall]]"
+        }
+    },
+    {
+        "Options": {
+            "numa": "typing.Optional[bool]",
+            "num_ctx": "typing.Optional[int]",
+            "num_batch": "typing.Optional[int]",
+            "num_gpu": "typing.Optional[int]",
+            "main_gpu": "typing.Optional[int]",
+            "low_vram": "typing.Optional[bool]",
+            "f16_kv": "typing.Optional[bool]",
+            "logits_all": "typing.Optional[bool]",
+            "vocab_only": "typing.Optional[bool]",
+            "use_mmap": "typing.Optional[bool]",
+            "use_mlock": "typing.Optional[bool]",
+            "embedding_only": "typing.Optional[bool]",
+            "num_thread": "typing.Optional[int]",
+            "num_keep": "typing.Optional[int]",
+            "seed": "typing.Optional[int]",
+            "num_predict": "typing.Optional[int]",
+            "top_k": "typing.Optional[int]",
+            "top_p": "typing.Optional[float]",
+            "tfs_z": "typing.Optional[float]",
+            "typical_p": "typing.Optional[float]",
+            "repeat_last_n": "typing.Optional[int]",
+            "temperature": "typing.Optional[float]",
+            "repeat_penalty": "typing.Optional[float]",
+            "presence_penalty": "typing.Optional[float]",
+            "frequency_penalty": "typing.Optional[float]",
+            "mirostat": "typing.Optional[int]",
+            "mirostat_tau": "typing.Optional[float]",
+            "mirostat_eta": "typing.Optional[float]",
+            "penalize_newline": "typing.Optional[bool]",
+            "stop": "typing.Optional[typing.Sequence[str]]"
+        }
+    },
+    {
+        "ProcessResponse": {
+            "models": "typing.Sequence[ollama._types.ProcessResponse.Model]"
+        }
+    },
+    {
+        "ProgressResponse": {
+            "completed": "typing.Optional[int]",
+            "total": "typing.Optional[int]",
+            "digest": "typing.Optional[str]"
+        }
+    },
+    {
+        "ShowResponse": {
+            "modified_at": "typing.Optional[datetime.datetime]",
+            "template": "typing.Optional[str]",
+            "modelfile": "typing.Optional[str]",
+            "license": "typing.Optional[str]",
+            "details": "typing.Optional[ollama._types.ModelDetails]",
+            "modelinfo": "typing.Optional[typing.Mapping[str, typing.Any]]",
+            "parameters": "typing.Optional[str]",
+            "capabilities": "typing.Optional[typing.List[str]]"
+        }
+    },
+    {
+        "StatusResponse": {
+            "status": "typing.Optional[str]"
+        }
+    },
+    {
+        "Tool": {
+            "type": "typing.Optional[str]",
+            "function": "typing.Optional[ollama._types.Tool.Function]"
+        }
+    },
+    {
+        "WebFetchResponse": {
+            "title": "typing.Optional[str]",
+            "content": "typing.Optional[str]",
+            "links": "typing.Optional[typing.Sequence[str]]"
+        }
+    },
+    {
+        "WebSearchResponse": {
+            "results": "typing.Sequence[ollama._types.WebSearchResult]"
+        }
+    }
+]
