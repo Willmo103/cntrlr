@@ -5,6 +5,7 @@ from pytest import fixture
 
 import core.base as cb
 import core.models.repo as rp
+import core.models.file_system as fs
 
 
 @fixture
@@ -19,7 +20,7 @@ def test_repo(sample_repo: rp.Repo):
     """Test the Repo model population and attributes."""
     repo = sample_repo
     assert repo.path_json is not None and isinstance(repo.path_json, cb.FilePath)
-    assert repo.stat_json is not None and isinstance(repo.stat_json, rp.RepoFileStat)
+    assert repo.stat_json is not None and isinstance(repo.stat_json, fs.BaseFileStat)
     assert repo.git_metadata is not None and isinstance(
         repo.git_metadata, rp.GitMetadata
     )
@@ -31,14 +32,15 @@ def test_repo(sample_repo: rp.Repo):
         assert isinstance(file, rp.RepoFile)
         assert file.path_json is not None and isinstance(file.path_json, cb.FilePath)
         assert file.stat_json is not None and isinstance(
-            file.stat_json, rp.RepoFileStat
+            file.stat_json, fs.BaseFileStat
         )
         assert file.sha256 is not None and isinstance(file.sha256, str)
-        assert file.id == file.sha256  # ID should match SHA256
+        assert file.id is not None and isinstance(file.id, str)
+        assert file.repo_id == repo.id
         assert file.uuid is not None and isinstance(file.uuid, str)
         if file.lines:
             for line in file.lines:
-                assert isinstance(line, rp.RepoFileLine)
+                assert isinstance(line, fs.TextFileLine)
                 assert line.file_id == file.id
                 assert (
                     line.content_hash

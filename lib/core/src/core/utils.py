@@ -27,7 +27,6 @@ Functions for file operations and model creation:
 Git Utilities
 -------------
 Functions for git repository operations:
-- get_git_metadata: Extract comprehensive git metadata from a repository
 - get_latest_commit: Get the latest commit information
 - get_all_commits: Get a list of commits from the repository
 - get_repo_name: Get the repository name

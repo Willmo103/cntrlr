@@ -95,7 +95,6 @@ from core.config.base import REMOTES_DIR
 from core.database import Base
 from core.models.file_system import BaseDirectory
 from core.utils import (
-    get_all_commits,
     is_binary_file,
     is_image_file,
     is_video_file,
@@ -518,69 +517,6 @@ class RepoFile(BaseTextFile):
         return v
 
 
-def get_git_metadata(repo_path: Path) -> Optional["GitMetadata"]:  # type: ignore  # noqa: F821
-    """
-    Extract git metadata from repository.
-
-    Arguments:
-        repo_path (Path): The path to the git repository.
-
-    Returns:
-        Optional[GitMetadata]: The git metadata if the path is a valid git repository, otherwise
-        None.
-
-    Example:
-        >>> metadata = get_git_metadata(Path("/path/to/repo"))
-        >>> print(metadata)
-        GitMetadata(...)
-    """
-    from core.models.repo import GitCommit, GitMetadata
-
-    if not (repo_path / ".git").exists() or not repo_path.is_dir():
-        return None
-    try:
-        repo = git.Repo(repo_path)
-
-        # Get remotes
-        remotes = {remote.name: remote.url for remote in repo.remotes}
-
-        # Get current branch
-        try:
-            current_branch = repo.active_branch.name
-        except TypeError:
-            current_branch = "HEAD (detached)"
-
-        # Get all branches
-        branches = [branch.name for branch in repo.branches]
-
-        # Get commit info
-        try:
-            latest_commit = repo.head.commit
-            commit_info = GitCommit(
-                hash=latest_commit.hexsha[:8],
-                message=latest_commit.message.strip(),
-                author=str(latest_commit.author),
-                date=latest_commit.committed_datetime.isoformat(),
-            )
-        except Exception:
-            commit_info = {"error": "Unable to get commit info"}
-
-        # Check for uncommitted changes
-        is_dirty = repo.is_dirty()
-        untracked_files = len(repo.untracked_files)
-
-        return GitMetadata(
-            remotes=remotes,
-            current_branch=current_branch,
-            branches=branches,
-            latest_commit=commit_info,
-            uncommitted_changes=is_dirty,
-            untracked_files=untracked_files,
-            commit_history=get_all_commits(repo_path, max_count=10) or [],
-        )
-    except Exception:
-        return None
-
 
 class Repo(BaseDirectory):
     """
@@ -618,6 +554,7 @@ class Repo(BaseDirectory):
         """
         Determine if a file should be skipped based on its relative path.
         """
+        file_rel_path = Path(file_rel_path).resolve()
         return not (
             is_image_file(file_rel_path)
             or is_video_file(file_rel_path)
@@ -703,10 +640,31 @@ class Repo(BaseDirectory):
         Populate a Repo model from a directory path.
         """
         try:
+            _repo = git.Repo(dir_path, search_parent_directories=True)
             if isinstance(dir_path, str):
                 dir_path = Path(dir_path).resolve()
             instance = super().populate(dir_path)
-            instance.git_metadata = get_git_metadata(dir_path)
+            instance.git_metadata = GitMetadata(
+                remotes={remote.name: remote.url for remote in _repo.remotes},
+                current_branch=_repo.active_branch.name
+                if not _repo.head.is_detached
+                else "HEAD (detached)",
+                branches=[branch.name for branch in _repo.branches],
+                latest_commit=GitCommit(
+                    hash=_repo.head.commit.hexsha[:8],
+                    message=_repo.head.commit.message.strip(),
+                    author=str(_repo.head.commit.author),
+                    date=_repo.head.commit.committed_datetime.isoformat(),
+                ),
+                uncommitted_changes=_repo.is_dirty(),
+                untracked_files=len(_repo.untracked_files),
+                commit_history=[GitCommit(
+                    hash=commit.hexsha[:8],
+                    message=commit.message.strip(),
+                    author=str(commit.author),
+                    date=commit.committed_datetime.isoformat(),
+                ) for commit in _repo.iter_commits(max_count=10)],
+            )
             instance.url = (
                 instance.git_metadata.remotes.get("origin")
                 if instance.git_metadata
@@ -720,7 +678,7 @@ class Repo(BaseDirectory):
                     repo_file = RepoFile.populate(
                         file_abs_path, repo_id=instance.id, repo_root=dir_path
                     )
-                    if repo_file._should_skip_file(file_rel_path):
+                    if instance._should_skip_file(file_rel_path):
                         continue
                     instance.files.append(repo_file)
 

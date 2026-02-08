@@ -676,18 +676,19 @@ class BaseFileModel(BaseModel):
                 file_path = file_path.resolve()
             if not file_path.exists() or not file_path.is_file():
                 raise FileNotFoundError(f"File not found: {file_path}")
-            return cls(
-                sha256=get_file_sha256(file_path),
-                stat_json=get_file_stat_model(file_path),
-                path_json=get_path_model(file_path),
-                mime_type=get_mime_type(file_path) or "application/octet-stream",
-                tags=[],
-                short_description=None,
-                long_description=None,
-                frozen=False,
-            )
         except Exception as e:
             raise ValueError(f"Error populating BaseFileModel: {e}")
+        instance = cls(
+            sha256=get_file_sha256(file_path),
+            stat_json=get_file_stat_model(file_path),
+            path_json=get_path_model(file_path),
+            mime_type=get_mime_type(file_path) or "application/octet-stream",
+            tags=[],
+            short_description=None,
+            long_description=None,
+            frozen=False,
+        )
+        return instance
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, BaseFileModel):
@@ -924,6 +925,7 @@ class BaseTextFile(BaseFileModel):
         instance.lines_json = lines_json
 
         return instance
+
 
     @model_serializer(when_used="json")
     def serialize_model(self) -> dict:
