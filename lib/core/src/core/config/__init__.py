@@ -88,6 +88,11 @@ from core.config.factory import FactoryBaseSettings
 class ControllerAPISettings(FactoryBaseSettings):
     """
     Controller API configuration settings.
+
+    Attributes:
+        host (str): Host for the Controller API server.
+        port (int): Port for the Controller API server.
+        log_level (str): Log level for the Controller API server.
     """
 
     host: str = Field(
@@ -114,6 +119,11 @@ class ControllerAPISettings(FactoryBaseSettings):
 class ConverterAPISettings(FactoryBaseSettings):
     """
     Converter API configuration settings.
+
+    Attributes:
+        host (str): Host for the Converter API server.
+        port (int): Port for the Converter API server.
+        log_level (str): Log level for the Converter API server.
     """
 
     host: str = Field(
@@ -140,6 +150,15 @@ class ConverterAPISettings(FactoryBaseSettings):
 class TTSServerSettings(FactoryBaseSettings):
     """
     Configuration for the Piper TTS Service.
+
+    Attributes:
+        host (str): Host for the TTS service.
+        port (int): Port for the TTS service.
+        log_level (str): Log level for the TTS service.
+        model_dir (Path): Directory where TTS models are stored.
+        output_dir (Path): Directory where generated audio files are stored.
+        default_model (str): Default TTS model to use.
+        default_speaker (int): Default speaker ID for multi-speaker models.
     """
 
     host: str = Field(
@@ -186,6 +205,13 @@ class TTSServerSettings(FactoryBaseSettings):
 class STTSettings(FactoryBaseSettings):
     """
     Configuration for the STT Service.
+
+    Attributes:
+        sample_rate (int): Sample rate for audio processing.
+        model_size (str): Size of the STT model to use.
+        log_level (str): Log level for the STT service.
+        host (str): Host for the STT service.
+        port (int): Port for the STT service.
     """
 
     sample_rate: int = Field(
@@ -203,15 +229,15 @@ class STTSettings(FactoryBaseSettings):
         description="Log level for the STT service.",
         alias="STT_LOG_LEVEL",
     )
-    port: int = Field(
-        default=8114,
-        description="Port for the STT service.",
-        alias="STT_SERVICE_PORT",
-    )
     host: str = Field(
         default="localhost",
         description="Host for the STT service.",
         alias="STT_SERVICE_HOST",
+    )
+    port: int = Field(
+        default=8114,
+        description="Port for the STT service.",
+        alias="STT_SERVICE_PORT",
     )
 
 
@@ -222,6 +248,14 @@ class STTSettings(FactoryBaseSettings):
 class UiServerSettings(FactoryBaseSettings):
     """
     Configuration for the UI Server.
+
+    Attributes:
+        host (str): Host for the UI server.
+        port (int): Port for the UI server.
+        log_level (str): Log level for the UI server.
+        base_dir (Path): Base directory for UI server templates.
+        template_dir (Path): Directory for UI server HTML templates.
+        static_dir (Path): Directory for UI server static files.
     """
 
     host: str = Field(
@@ -264,6 +298,13 @@ class UiServerSettings(FactoryBaseSettings):
 class AuthSettings(FactoryBaseSettings):
     """
     Authentication configuration settings.
+
+    Attributes:
+        secret_key (str): Secret key for JWT and other security-related operations.
+        algorithm (str): Algorithm used for JWT encoding and decoding.
+        access_token_expire_minutes (int): Access token expiration time in minutes.
+        admin_username (str): Admin username for the application.
+        admin_password (str): Admin password for the application.
     """
 
     secret_key: str = Field(
@@ -300,6 +341,16 @@ class AuthSettings(FactoryBaseSettings):
 class OllamaSettings(FactoryBaseSettings):
     """
     Configuration for the Ollama LLM Service.
+
+    Attributes:
+        host (str): Host for the Ollama service.
+        default_model (str): Default Ollama model to use.
+        context_size (int): Context window size for the Ollama model.
+        default_temperature (float): Default temperature setting for the Ollama model.
+        default_top_k (int): Default top_k setting for the Ollama model.
+        default_top_p (float): Default top_p setting for the Ollama model.
+        embedding_model (str): Ollama model to use for embeddings.
+        vl_model (str): Ollama model to use for vision-language tasks.
     """
 
     host: str = Field(
@@ -351,6 +402,13 @@ class OllamaSettings(FactoryBaseSettings):
 class MQTTSettings(FactoryBaseSettings):
     """
     Configuration for the MQTT Broker.
+
+    Attributes:
+        broker (str): Host for the MQTT broker.
+        port (int): Port for the MQTT broker.
+        username (str): Username for the MQTT broker.
+        password (str): Password for the MQTT broker.
+        topic_prefix (str): Topic prefix for the MQTT broker.
     """
 
     broker: str = Field(
@@ -387,6 +445,18 @@ class MQTTSettings(FactoryBaseSettings):
 class S3Settings(FactoryBaseSettings):
     """
     S3-compatible storage configuration settings.
+
+    Attributes:
+        endpoint_url (str): Endpoint URL for the S3-compatible storage.
+        access_key (str): Access key for the S3-compatible storage.
+        secert_key (str): Secret key for the S3-compatible storage.
+        bucket_name (str): Name of the main S3 bucket for application data.
+        s3_presigned_url_timeout (int): Expiration time for presigned URLs in seconds.
+        tts_bucket (str): Name of the S3 bucket for TTS audio files.
+        html_bucket (str): Name of the S3 bucket for HTML content.
+        docling_bucket (str): Name of the S3 bucket for Docling documents.
+        cache_bucket (str): Name of the S3 bucket for cache data.
+        buckets (list[str]): List of all required buckets.
     """
 
     # alias: str = os.getenv("S3_ALIAS", "minio")
@@ -439,6 +509,12 @@ class S3Settings(FactoryBaseSettings):
 class GotifySettings(FactoryBaseSettings):
     """
     Configuration for Gotify Notification Service.
+
+    Attributes:
+        server_url (str): Base URL for the Gotify server.
+        app_token (str): API token for authenticating with the Gotify server.
+        app_name (str): Name of the service sending notifications.
+        client_token (str): Client token for authenticating with the Gotify server.
     """
 
     server_url: str = Field(
@@ -470,6 +546,11 @@ class GotifySettings(FactoryBaseSettings):
 class ClipboardWatcherSettings(FactoryBaseSettings):
     """
     Configuration for the Clipboard Watcher Service.
+
+    Attributes:
+        poll_interval (float): Interval for polling the clipboard in seconds.
+        thumbnail_dim (tuple[int, int]): Dimensions for generated thumbnails (width, height).
+        paste_directory (Path): Directory for pasting clipboard content.
     """
 
     poll_interval: float = Field(
@@ -496,6 +577,11 @@ class ClipboardWatcherSettings(FactoryBaseSettings):
 class RedditSettings(FactoryBaseSettings):
     """
     PRAW Client configuration settings.
+
+    Attributes:
+        client_id (str): Reddit API client ID.
+        client_secret (str): Reddit API client secret.
+        user_agent (str): User agent for Reddit API requests.
     """
 
     client_id: str = Field(
