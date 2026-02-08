@@ -5,70 +5,326 @@
 # region Imports
 
 from pathlib import Path
+import hashlib
 import httpx
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 from docling.document_converter import DocumentConverter
-
+from docling_core.types import DoclingDocument
+from datetime import datetime
+from pathlib import Path
+from typing import Optional, Union
+from pydantic import BaseModel, Field
+from core.database import Base
+from sqlite_utils import Database
 from ..models import URLFetch
 from ..logger import logger as _logger
 from ..config import INPUT_STORAGE_PATH, CONVERTED_STORAGE_PATH
 # from core.models.conversion_result import ConversionResultEntity, ConversionResult
 from fastapi import APIRouter, HTTPException, Request
-from core.utils import get_time_iso
+from core.utils import get_time, get_time_iso
 
+# endregion
+# region Storage Paths
+
+input_html_storage = INPUT_STORAGE_PATH / "html"
+"""Path to raw HTML storage directory."""
+input_doc_storage = INPUT_STORAGE_PATH / "uploaded"
+"""Path to uploaded document storage directory."""
+docling_document_storage = CONVERTED_STORAGE_PATH / "dl_documents"
+"""Path where JSON Docling documents are stored."""
+db: Database = Database(CONVERTED_STORAGE_PATH / "converter_data.db")
+"""SQLite Utils Database instance for converter data storage."""
+
+docling_document_storage.mkdir(parents=True, exist_ok=True)
+input_html_storage.mkdir(parents=True, exist_ok=True)
+input_doc_storage.mkdir(parents=True, exist_ok=True)
+
+dc = DocumentConverter()
+# chunker = HybridChunker()
 # endregion
 # region API Models
 
+class URLFetch(BaseModel):
+    """
+    Pydantic model representing the URL fetch results.
+
+    Attributes:
+        url (str): The URL that was fetched.
+        result (int): The result code of the URL fetch operation.
+        storage_path (Optional[str]): The local storage path where the fetched HTML content is saved.
+        error_message (Optional[str]): Error message if the fetch operation failed.
+        first_seen (Optional[datetime]): Timestamp when the URL was first seen.
+        last_updated (Optional[datetime]): Timestamp when the URL was last updated.
+    """
+    url: str = Field(..., description="The URL that was fetched.")
+    result: int = Field(
+        ..., description="The result code of the URL fetch operation.")
+    storage_path: str = Field(
+        ..., description="The local storage path where the fetched HTML content is saved.")
+    error_message: Optional[str] = Field(
+        None, description="Error message if the fetch operation failed.")
+    first_seen: Optional[datetime] = Field(
+        None, description="Timestamp when the URL was first seen.")
+    last_updated: Optional[datetime] = Field(
+        None, description="Timestamp when the URL was last updated.")
+
+    @field_validator("url")
+    def validate_url(cls, v):
+        """Validate that the URL is well-formed."""
+        if not v.startswith(("http://", "https://")):
+            raise ValueError("URL must start with http:// or https://")
+        return v
+
+    @model_validator("before")
+    def validate_result_and_error(cls, values):
+        """Ensure that if result indicates an error, error_message is provided."""
+        result = values.get("result")
+        error_message = values.get("error_message")
+        if result != 200 and not error_message:
+            raise ValueError("Error message must be provided if result is not 200.")
+        return values
+
+    @model_validator("before")
+    def set_timestamps(cls, values):
+        """Set first_seen and last_updated timestamps if not provided."""
+        now = get_time()
+        if not values.get("first_seen"):
+            values["first_seen"] = now
+        if not values.get("last_updated"):
+            values["last_updated"] = now
+        return values
+
+    @property
+    def id(self) -> Optional[str]:
+        """Get the unique identifier for the URL fetch result."""
+
+        hasher = hashlib.sha256()
+        hasher.update(self.url.encode('utf-8'))
+        return hasher.hexdigest()
+
+    @property
+    def Path(self) -> Optional[Path]:
+        """Get the storage path as a Path object."""
+        if self.storage_path:
+            return Path(self.storage_path)
+        return None
+
+class UploadedDocument(BaseModel):
+    """
+    Pydantic model representing a file upload stored in a sqlite_utils database.
+
+    Attributes:
+        filename: str: The original filename of the uploaded document.
+        mime_type: str: The MIME type of the uploaded document.
+        storage_path: str: The local storage path where the uploaded document is saved.
+        uploaded_at: Optional[datetime]: Timestamp when the document was uploaded.
+    """
+
+    filename: str = Field(..., description="The original filename of the uploaded document.")
+    mime_type: str = Field(..., description="The MIME type of the uploaded document.")
+    storage_path: str = Field(..., description="The local storage path where the uploaded document is saved.")
+    uploaded_at: Optional[datetime] = Field(
+        None, description="Timestamp when the document was uploaded."
+    )
+
+    @property
+    def id(self) -> Optional[str]:
+        """Get the unique identifier for the uploaded document."""
+
+        hasher = hashlib.sha256()
+        hasher.update(self.content_bytes)
+        hasher.update(self.mime_type.encode('utf-8'))
+        return hasher.hexdigest()
+
+    @property
+    def Path(self) -> Path:
+        """Get the storage path as a Path object."""
+        return Path(self.storage_path)
 
 class URLConversionRequest(BaseModel):
     url: str = Field(..., description="The URL of the document to be converted.")
 
+class ConvertedDocument(BaseModel):
+    """
+    Pydantic model representing a converted document.
 
+    Attributes:
+        id: str: Unique identifier for the converted document.
+        source_url: Optional[str]: The original URL of the document, if applicable.
+        storage_path: str: The local storage path where the converted document is saved.
+        conversion_time: Optional[datetime]: Timestamp when the conversion was performed.
+    """
+
+    source: Union[URLFetch, UploadedDocument] = Field(..., description="The source of the document conversion.")
+    document_json_path: Path = Field(..., description="The local storage path where the converted document JSON is saved.")
+    conversion_time: datetime = Field(
+        default=get_time(), description="Timestamp when the conversion was performed."
+    )
+
+    @property
+    def id(self) -> Optional[str]:
+        """Get the unique identifier for the converted document."""
+
+        hasher = hashlib.sha256()
+        hasher.update(self.source_id.encode('utf-8'))
+        hasher.update(str(self.source_path).encode('utf-8'))
+        hasher.update(str(self.document_json_path).encode('utf-8'))
+        return hasher.hexdigest()
+
+    @property
+    def Document(self) -> DoclingDocument:
+        """Load the converted document as a DoclingDocument instance."""
+        try:
+            return DoclingDocument.model_validate_json(self.document_json_path.read_text(encoding='utf-8'))
+        except Exception as e:
+            _logger.error(f"Error loading DoclingDocument from {self.document_json_path}: {e}")
+            raise ValueError(f"Failed to load DoclingDocument: {e}") from e
+
+    @property
+    def markdown(self) -> str:
+        """Export the DoclingDocument to Markdown format."""
+        try:
+            doc = self.Document
+            return doc.export_to_markdown()
+        except Exception as e:
+            _logger.error(f"Error exporting DoclingDocument to Markdown from {self.document_json_path}: {e}")
+            raise ValueError(f"Failed to export DoclingDocument to Markdown: {e}") from e
+
+    @property
+    def html(self) -> str:
+        try:
+            doc = self.Document
+            return doc.export_to_html()
+        except Exception as e:
+            _logger.error(f"Error exporting DoclingDocument to HTML from {self.document_json_path}: {e}")
+            raise ValueError(f"Failed to export DoclingDocument to HTML: {e}") from e
+
+    @property
+    def doctags(self) -> list[str]:
+        try:
+            doc = self.Document
+            return doc.export_to_doctags()
+        except Exception as e:
+            _logger.error(f"Error retrieving doctags from DoclingDocument at {self.document_json_path}: {e}")
+            raise ValueError(f"Failed to retrieve doctags: {e}") from e
+
+    @property
+    def text(self) -> list[str]:
+        try:
+            doc = self.Document
+            return doc.export_to_text()
+        except Exception as e:
+            _logger.error(f"Error retrieving doc tokens from DoclingDocument at {self.document_json_path}: {e}")
+            raise ValueError(f"Failed to retrieve doc tokens: {e}") from e
+
+    @property
+    def source_document(self) -> Path:
+        """Get the original source document path."""
+        if isinstance(self.source, URLFetch):
+            return Path(self.source.storage_path)
+        elif isinstance(self.source, UploadedDocument):
+            return Path(self.source.storage_path)
+        else:
+            raise ValueError("Unsupported source type for ConvertedDocument.")
 # endregion
-# region API Router and Endpoints
+# region Helper Functions
 
-conversion_api = APIRouter(prefix="/api", tags=["conversion"])
-_html_storage_path_ = INPUT_STORAGE_PATH / "html"
-_input_document_storage_path_ = INPUT_STORAGE_PATH / "uploaded"
-_converted_storage_path_ = CONVERTED_STORAGE_PATH / "dl_documents"
-_converted_storage_path_.mkdir(parents=True, exist_ok=True)
-_html_storage_path_.mkdir(parents=True, exist_ok=True)
-_input_document_storage_path_.mkdir(parents=True, exist_ok=True)
-
-async def handle_fetch_request(url: str) -> str:
-    """Fetch the content of the URL and store it locally."""
+async def handle_fetch_request(url: str) -> URLFetch:
+    """Fetch a URL and store its HTML content locally."""
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30) as client:
             response = await client.get(url)
             response.raise_for_status()
-            content = response.text
+            html_content = response.text
 
-            # Store content to a local file (for demonstration, using URL hash as filename)
-            filename = Path(f"stored_contents/{hash(url)}.html")
-            filename.parent.mkdir(parents=True, exist_ok=True)
-            with open(filename, "w", encoding="utf-8") as f:
-                f.write(content)
+        timestamp = get_time().strftime("%Y%m%d%H%M%S")
+        safe_filename = url.replace("://", "_").replace("/", "_")
+        file_name = f"{safe_filename}_{timestamp}.html"
+        file_path = input_html_storage / file_name
 
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(html_content)
 
-            return str(filename)
+        result = URLFetch(
+            url=url,
+            result=response.status_code,
+            storage_path=str(file_path),
+            first_seen=get_time(),
+            last_updated=get_time(),
+        )
+        db["url_fetches"].upsert(result.model_dump(), pk="url")
+        return result
     except httpx.HTTPError as e:
-        _logger.error(f"Failed to fetch URL {url}: {e}")
-        raise HTTPException(status_code=400, detail=f"Failed to fetch URL: {e}") from e
+        _logger.error(f"HTTP error fetching URL {url}: {e}")
+        raise HTTPException(status_code=502, detail=f"Failed to fetch URL: {e}") from e
+    except Exception as e:
+        _logger.error(f"Error fetching URL {url}: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error") from e
 
-async def handle_file_upload(request: Request) -> Path:
-    """Handle file upload and store it locally."""
+async def handle_file_upload(request: Request) -> UploadedDocument:
+    """Handle file upload and store the document locally."""
     try:
         form = await request.form()
         upload_file = form.get("file")
         if not upload_file:
             raise HTTPException(status_code=400, detail="No file uploaded.")
-        file_location = _input_document_storage_path_ / upload_file.filename
-        with open(file_location, "wb") as f:
-            f.write(await upload_file.read())
-        return file_location
+
+        content = await upload_file.read()
+        timestamp = get_time().strftime("%Y%m%d%H%M%S")
+        safe_filename = upload_file.filename.replace("/", "_")
+        file_name = f"{safe_filename}_{timestamp}"
+        file_path = input_doc_storage / file_name
+
+        with open(file_path, "wb") as f:
+            f.write(content)
+
+        uploaded_doc = UploadedDocument(
+            filename=upload_file.filename,
+            mime_type=upload_file.content_type,
+            storage_path=str(file_path),
+            uploaded_at=get_time(),
+        )
+        db["uploaded_documents"].upsert(uploaded_doc.model_dump(), pk="storage_path")
+        return uploaded_doc
     except Exception as e:
-        _logger.error(f"File upload failed: {e}")
-        raise HTTPException(status_code=500, detail="File upload failed.") from e
+        _logger.error(f"Error handling file upload: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error") from e
+
+
+async def handle_conversion(source: Union[URLFetch, UploadedDocument]) -> ConvertedDocument:
+    """Handle document conversion using Docling."""
+    try:
+        if isinstance(source, URLFetch):
+            source_path = Path(source.storage_path)
+        elif isinstance(source, UploadedDocument):
+            source_path = Path(source.storage_path)
+        else:
+            raise ValueError("Unsupported source type for conversion.")
+
+        docling_doc = dc.convert(str(source_path))
+        timestamp = get_time().strftime("%Y%m%d%H%M%S")
+        safe_filename = source_path.stem.replace("/", "_")
+        json_file_name = f"{safe_filename}_{timestamp}.json"
+        json_file_path = docling_document_storage / json_file_name
+
+        with open(json_file_path, "w", encoding="utf-8") as f:
+            f.write(docling_doc.model_dump_json())
+
+        converted_doc = ConvertedDocument(
+            source=source,
+            document_json_path=json_file_path,
+            conversion_time=get_time(),
+        )
+        db["converted_documents"].upsert(converted_doc.model_dump(), pk="id")
+        return converted_doc
+    except Exception as e:
+        _logger.error(f"Error handling document conversion: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error") from e
+
+# endregion
+# region API Router and Endpoints
+
+conversion_api = APIRouter(prefix="/api", tags=["conversion"])
 
 @conversion_api.get("/", summary="Conversion API Root")
 async def conversion_api_root(req: Request) -> dict[str, str]:
@@ -101,6 +357,9 @@ async def convert_web_document(request: URLConversionRequest) -> URLFetch:
             )
         )
         # Placeholder for actual conversion logic
+
+        result = await handle_fetch_request(request.url)
+
 
     except Exception as e:
         _logger.error(
