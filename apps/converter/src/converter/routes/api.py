@@ -16,7 +16,6 @@ from typing import Optional, Union
 from pydantic import BaseModel, Field
 from core.database import Base
 from sqlite_utils import Database
-from ..models import URLFetch
 from ..logger import logger as _logger
 from ..config import INPUT_STORAGE_PATH, CONVERTED_STORAGE_PATH
 # from core.models.conversion_result import ConversionResultEntity, ConversionResult
