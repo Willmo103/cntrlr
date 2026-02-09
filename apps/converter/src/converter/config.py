@@ -12,7 +12,8 @@ Attributes:
 """
 
 from pathlib import Path
-from core.config import get_settings, ConverterAPISettings
+
+from core.config import ConverterAPISettings, get_settings
 
 app_root = Path(
     __file__
@@ -23,6 +24,8 @@ app_root = Path(
 """Application-wide settings instance."""
 api_settings: ConverterAPISettings = get_settings(ConverterAPISettings)
 """Converter API-specific settings instance: ('PORT', 'HOST', and 'LOG_LEVEL')."""
+ollama_settings = api_settings.ollama
+"""Ollama-specific settings instance: ('HOST', 'PORT', and 'MODEL_NAME')."""
 
 # Create a tmp var for storage paths
 # Ensure storage directories exist

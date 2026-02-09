@@ -49,7 +49,6 @@ import os
 from datetime import datetime
 from typing import List
 
-
 # endregion
 # region Constants -- IGNORE_PARTS
 IGNORE_PARTS: List[str] = [

@@ -71,7 +71,6 @@ from .image_file import ImageFile, ImageFileEntity, ImageScanResult  # noqa: F40
 from .sqlite_file import SQLiteFile, SQLiteFileEntity  # noqa: F401
 from .video_file import VideoFile, VideoFileEntity, VideoScanResult  # noqa: F401
 
-
 # endregion
 # region Exports
 __all__ = [

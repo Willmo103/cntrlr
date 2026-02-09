@@ -92,7 +92,6 @@ from .utils import (
     is_video_file,
 )
 
-
 # endregion
 # region Base File System Models
 # --- FILE PART MODELS ---
@@ -925,7 +924,6 @@ class BaseTextFile(BaseFileModel):
         instance.lines_json = lines_json
 
         return instance
-
 
     @model_serializer(when_used="json")
     def serialize_model(self) -> dict:

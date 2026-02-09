@@ -9,16 +9,15 @@ Tests cover:
 """
 
 import json
-import pytest
-from unittest.mock import MagicMock, patch, PropertyMock
 from datetime import datetime, timezone
-from pydantic import BaseModel
+from unittest.mock import MagicMock, PropertyMock, patch
 
+import pytest
+from pydantic import BaseModel
 from sqlite_utils import Database
 
+from core.clients.ollama_client import OllamaClient, _log_request_response, _serialize
 from core.config import OllamaSettings
-from core.clients.ollama_client import OllamaClient, _serialize, _log_request_response
-
 
 # region Test Constants
 
@@ -32,6 +31,7 @@ TEST_MODEL = "llama3.2:3b"
 
 class MockPydanticModel(BaseModel):
     """Mock Pydantic model for testing serialization."""
+
     field1: str
     field2: int
 
@@ -77,9 +77,13 @@ def mock_ollama_client() -> MagicMock:
 
 
 @pytest.fixture
-def client(mock_db: MagicMock, mock_settings: OllamaSettings, mock_ollama_client: MagicMock) -> OllamaClient:
+def client(
+    mock_db: MagicMock, mock_settings: OllamaSettings, mock_ollama_client: MagicMock
+) -> OllamaClient:
     """Create OllamaClient with mocked dependencies."""
-    with patch("core.clients.ollama_client.ollama.Client", return_value=mock_ollama_client):
+    with patch(
+        "core.clients.ollama_client.ollama.Client", return_value=mock_ollama_client
+    ):
         oc = OllamaClient(db=mock_db, settings=mock_settings)
         # Store reference to the mock for test access
         oc._mock_client = mock_ollama_client
@@ -280,7 +284,9 @@ class TestDecoratedMethods:
         mock_db.__getitem__.assert_any_call("embed_responses")
         assert result is mock_response
 
-    def test_embeddings_logs_and_returns(self, client: OllamaClient, mock_db: MagicMock):
+    def test_embeddings_logs_and_returns(
+        self, client: OllamaClient, mock_db: MagicMock
+    ):
         """Test embeddings method logs request/response and returns result."""
         mock_response = MagicMock()
         mock_response.model_dump.return_value = {
@@ -297,7 +303,9 @@ class TestDecoratedMethods:
         mock_db.__getitem__.assert_any_call("embeddings_responses")
         assert result is mock_response
 
-    def test_response_without_model_dump(self, client: OllamaClient, mock_db: MagicMock):
+    def test_response_without_model_dump(
+        self, client: OllamaClient, mock_db: MagicMock
+    ):
         """Test handling of response without model_dump method."""
         # Create a response without model_dump
         mock_response = "plain_string_response"
@@ -356,7 +364,9 @@ class TestNonDecoratedMethods:
 
         result = client.push("mymodel:latest", insecure=False)
 
-        client._mock_client.push.assert_called_once_with("mymodel:latest", insecure=False)
+        client._mock_client.push.assert_called_once_with(
+            "mymodel:latest", insecure=False
+        )
         assert result is mock_response
 
     def test_create_creates_model(self, client: OllamaClient):
@@ -390,9 +400,7 @@ class TestNonDecoratedMethods:
 
         result = client.copy(TEST_MODEL, "llama3.2:3b-copy")
 
-        client._mock_client.copy.assert_called_once_with(
-            TEST_MODEL, "llama3.2:3b-copy"
-        )
+        client._mock_client.copy.assert_called_once_with(TEST_MODEL, "llama3.2:3b-copy")
         assert result is mock_response
 
     def test_ps_lists_running_models(self, client: OllamaClient):

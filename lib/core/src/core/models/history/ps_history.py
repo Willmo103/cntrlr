@@ -50,10 +50,14 @@
 #     & $global:OriginalPrompt
 # }
 
+import json
+import os
 from asyncio import subprocess
-import os, json
-from sqlite_utils import Database
 from pathlib import Path
 
+from sqlite_utils import Database
+
 DB_PATH = os.getenv("PS_HISTORY_LOGGING_DB_PATH", str(Path.home() / ".ps_history.db"))
-POWERSHELL_PROFILE_PATH = subprocess.run(["powershell", "-NoProfile", "-Command", "$profile"], capture_output=True, text=True).stdout.strip()
+POWERSHELL_PROFILE_PATH = subprocess.run(
+    ["powershell", "-NoProfile", "-Command", "$profile"], capture_output=True, text=True
+).stdout.strip()

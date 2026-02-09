@@ -5,7 +5,6 @@ import pytest
 
 from core.models import file_system as fs
 
-
 TEST_DATA_FOLDER = Path(__file__).parent / "test_data"
 TEST_MP3_FILE = TEST_DATA_FOLDER / "file_example_MP3_700KB.mp3"
 TEST_MP4_FILE = TEST_DATA_FOLDER / "file_example_MP4_480_1_5MG.mp4"
@@ -136,7 +135,10 @@ def test_markdown_file_contents(test_markdown_file_path):
     assert md_file.path_json is not None
     assert md_file.stat_json is not None
     assert md_file.sha256 is not None
-    assert md_file.mime_type == "text/markdown" or md_file.mime_type == "application/octet-stream"
+    assert (
+        md_file.mime_type == "text/markdown"
+        or md_file.mime_type == "application/octet-stream"
+    )
     # check metadata attributes
     assert md_file.short_description is None
     assert md_file.long_description is None
@@ -235,7 +237,10 @@ def test_base_text_file_contents(test_base_text_file_path):
     assert text_file.path_json is not None
     assert text_file.stat_json is not None
     assert text_file.sha256 is not None
-    assert text_file.mime_type == "application/octet-stream" or text_file.mime_type == "text/markdown"
+    assert (
+        text_file.mime_type == "application/octet-stream"
+        or text_file.mime_type == "text/markdown"
+    )
     # check metadata attributes
     assert text_file.short_description is None
     assert text_file.long_description is None

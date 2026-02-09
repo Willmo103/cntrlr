@@ -31,7 +31,6 @@ from core.models import (  # noqa: F401
 )
 from core.utils import get_time
 
-
 # endregion
 # region ServiceExceptions
 

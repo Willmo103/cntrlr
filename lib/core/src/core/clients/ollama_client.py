@@ -1,13 +1,12 @@
-from typing import Any, Callable, TypeVar
-from functools import wraps
-from datetime import datetime, timezone
 import json
+from datetime import datetime, timezone
+from functools import wraps
+from typing import Any, Callable, TypeVar
 
 import ollama
 from sqlite_utils import Database
 
 from core.config import OllamaSettings
-
 
 T = TypeVar("T")
 
@@ -29,6 +28,7 @@ def _serialize(obj: Any) -> Any:
 
 def _log_request_response(method_name: str):
     """Decorator to log request/response for any Ollama method."""
+
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
         def wrapper(self: "OllamaClient", **kwargs) -> T:
@@ -38,7 +38,7 @@ def _log_request_response(method_name: str):
             request_row = {
                 "timestamp": timestamp,
                 "method": method_name,
-                **{k: _serialize(v) for k, v in kwargs.items()}
+                **{k: _serialize(v) for k, v in kwargs.items()},
             }
             self.__db__[f"{method_name}_requests"].insert(request_row)
 
@@ -46,16 +46,22 @@ def _log_request_response(method_name: str):
             response: T = func(self, **kwargs)
 
             # Log response
-            response_data = response.model_dump() if hasattr(response, "model_dump") else {"result": str(response)}
+            response_data = (
+                response.model_dump()
+                if hasattr(response, "model_dump")
+                else {"result": str(response)}
+            )
             response_row = {
                 "timestamp": timestamp,
                 "method": method_name,
-                **{k: _serialize(v) for k, v in response_data.items()}
+                **{k: _serialize(v) for k, v in response_data.items()},
             }
             self.__db__[f"{method_name}_responses"].insert(response_row)
 
             return response
+
         return wrapper
+
     return decorator
 
 
@@ -120,4 +126,3 @@ class OllamaClient:
     def ps(self) -> ollama.ProcessResponse:
         """List running models."""
         return self.__client__.ps()
-

@@ -1,26 +1,28 @@
 # region Docstrings
-"""
-"""
+""" """
+
 # endregion
 # region Imports
 
-from pathlib import Path
 import hashlib
-import httpx
-from pydantic import BaseModel, Field, field_validator, model_validator
-from docling.document_converter import DocumentConverter
-from docling_core.types import DoclingDocument
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Union
-from pydantic import BaseModel, Field
-from core.database import Base
-from sqlite_utils import Database
-from ..logger import logger as _logger
-from ..config import INPUT_STORAGE_PATH, CONVERTED_STORAGE_PATH
+
+import httpx
+from docling.document_converter import DocumentConverter
+from docling_core.types import DoclingDocument
+
 # from core.models.conversion_result import ConversionResultEntity, ConversionResult
 from fastapi import APIRouter, HTTPException, Request
+from pydantic import BaseModel, Field, field_validator, model_validator
+from sqlite_utils import Database
+
+from core.database import Base
 from core.utils import get_time, get_time_iso
+
+from ..config import CONVERTED_STORAGE_PATH, INPUT_STORAGE_PATH
+from ..logger import logger as _logger
 
 # endregion
 # region Storage Paths
@@ -43,6 +45,7 @@ dc = DocumentConverter()
 # endregion
 # region API Models
 
+
 class URLFetch(BaseModel):
     """
     Pydantic model representing the URL fetch results.
@@ -55,17 +58,22 @@ class URLFetch(BaseModel):
         first_seen (Optional[datetime]): Timestamp when the URL was first seen.
         last_updated (Optional[datetime]): Timestamp when the URL was last updated.
     """
+
     url: str = Field(..., description="The URL that was fetched.")
-    result: int = Field(
-        ..., description="The result code of the URL fetch operation.")
+    result: int = Field(..., description="The result code of the URL fetch operation.")
     storage_path: str = Field(
-        ..., description="The local storage path where the fetched HTML content is saved.")
+        ...,
+        description="The local storage path where the fetched HTML content is saved.",
+    )
     error_message: Optional[str] = Field(
-        None, description="Error message if the fetch operation failed.")
+        None, description="Error message if the fetch operation failed."
+    )
     first_seen: Optional[datetime] = Field(
-        None, description="Timestamp when the URL was first seen.")
+        None, description="Timestamp when the URL was first seen."
+    )
     last_updated: Optional[datetime] = Field(
-        None, description="Timestamp when the URL was last updated.")
+        None, description="Timestamp when the URL was last updated."
+    )
 
     @field_validator("url")
     def validate_url(cls, v):
@@ -98,7 +106,7 @@ class URLFetch(BaseModel):
         """Get the unique identifier for the URL fetch result."""
 
         hasher = hashlib.sha256()
-        hasher.update(self.url.encode('utf-8'))
+        hasher.update(self.url.encode("utf-8"))
         return hasher.hexdigest()
 
     @property
@@ -107,6 +115,7 @@ class URLFetch(BaseModel):
         if self.storage_path:
             return Path(self.storage_path)
         return None
+
 
 class UploadedDocument(BaseModel):
     """
@@ -119,9 +128,13 @@ class UploadedDocument(BaseModel):
         uploaded_at: Optional[datetime]: Timestamp when the document was uploaded.
     """
 
-    filename: str = Field(..., description="The original filename of the uploaded document.")
+    filename: str = Field(
+        ..., description="The original filename of the uploaded document."
+    )
     mime_type: str = Field(..., description="The MIME type of the uploaded document.")
-    storage_path: str = Field(..., description="The local storage path where the uploaded document is saved.")
+    storage_path: str = Field(
+        ..., description="The local storage path where the uploaded document is saved."
+    )
     uploaded_at: Optional[datetime] = Field(
         None, description="Timestamp when the document was uploaded."
     )
@@ -132,7 +145,7 @@ class UploadedDocument(BaseModel):
 
         hasher = hashlib.sha256()
         hasher.update(self.content_bytes)
-        hasher.update(self.mime_type.encode('utf-8'))
+        hasher.update(self.mime_type.encode("utf-8"))
         return hasher.hexdigest()
 
     @property
@@ -140,8 +153,10 @@ class UploadedDocument(BaseModel):
         """Get the storage path as a Path object."""
         return Path(self.storage_path)
 
+
 class URLConversionRequest(BaseModel):
     url: str = Field(..., description="The URL of the document to be converted.")
+
 
 class ConvertedDocument(BaseModel):
     """
@@ -154,8 +169,13 @@ class ConvertedDocument(BaseModel):
         conversion_time: Optional[datetime]: Timestamp when the conversion was performed.
     """
 
-    source: Union[URLFetch, UploadedDocument] = Field(..., description="The source of the document conversion.")
-    document_json_path: Path = Field(..., description="The local storage path where the converted document JSON is saved.")
+    source: Union[URLFetch, UploadedDocument] = Field(
+        ..., description="The source of the document conversion."
+    )
+    document_json_path: Path = Field(
+        ...,
+        description="The local storage path where the converted document JSON is saved.",
+    )
     conversion_time: datetime = Field(
         default=get_time(), description="Timestamp when the conversion was performed."
     )
@@ -165,18 +185,22 @@ class ConvertedDocument(BaseModel):
         """Get the unique identifier for the converted document."""
 
         hasher = hashlib.sha256()
-        hasher.update(self.source_id.encode('utf-8'))
-        hasher.update(str(self.source_path).encode('utf-8'))
-        hasher.update(str(self.document_json_path).encode('utf-8'))
+        hasher.update(self.source_id.encode("utf-8"))
+        hasher.update(str(self.source_path).encode("utf-8"))
+        hasher.update(str(self.document_json_path).encode("utf-8"))
         return hasher.hexdigest()
 
     @property
     def Document(self) -> DoclingDocument:
         """Load the converted document as a DoclingDocument instance."""
         try:
-            return DoclingDocument.model_validate_json(self.document_json_path.read_text(encoding='utf-8'))
+            return DoclingDocument.model_validate_json(
+                self.document_json_path.read_text(encoding="utf-8")
+            )
         except Exception as e:
-            _logger.error(f"Error loading DoclingDocument from {self.document_json_path}: {e}")
+            _logger.error(
+                f"Error loading DoclingDocument from {self.document_json_path}: {e}"
+            )
             raise ValueError(f"Failed to load DoclingDocument: {e}") from e
 
     @property
@@ -186,8 +210,12 @@ class ConvertedDocument(BaseModel):
             doc = self.Document
             return doc.export_to_markdown()
         except Exception as e:
-            _logger.error(f"Error exporting DoclingDocument to Markdown from {self.document_json_path}: {e}")
-            raise ValueError(f"Failed to export DoclingDocument to Markdown: {e}") from e
+            _logger.error(
+                f"Error exporting DoclingDocument to Markdown from {self.document_json_path}: {e}"
+            )
+            raise ValueError(
+                f"Failed to export DoclingDocument to Markdown: {e}"
+            ) from e
 
     @property
     def html(self) -> str:
@@ -195,7 +223,9 @@ class ConvertedDocument(BaseModel):
             doc = self.Document
             return doc.export_to_html()
         except Exception as e:
-            _logger.error(f"Error exporting DoclingDocument to HTML from {self.document_json_path}: {e}")
+            _logger.error(
+                f"Error exporting DoclingDocument to HTML from {self.document_json_path}: {e}"
+            )
             raise ValueError(f"Failed to export DoclingDocument to HTML: {e}") from e
 
     @property
@@ -204,7 +234,9 @@ class ConvertedDocument(BaseModel):
             doc = self.Document
             return doc.export_to_doctags()
         except Exception as e:
-            _logger.error(f"Error retrieving doctags from DoclingDocument at {self.document_json_path}: {e}")
+            _logger.error(
+                f"Error retrieving doctags from DoclingDocument at {self.document_json_path}: {e}"
+            )
             raise ValueError(f"Failed to retrieve doctags: {e}") from e
 
     @property
@@ -213,7 +245,9 @@ class ConvertedDocument(BaseModel):
             doc = self.Document
             return doc.export_to_text()
         except Exception as e:
-            _logger.error(f"Error retrieving doc tokens from DoclingDocument at {self.document_json_path}: {e}")
+            _logger.error(
+                f"Error retrieving doc tokens from DoclingDocument at {self.document_json_path}: {e}"
+            )
             raise ValueError(f"Failed to retrieve doc tokens: {e}") from e
 
     @property
@@ -225,8 +259,11 @@ class ConvertedDocument(BaseModel):
             return Path(self.source.storage_path)
         else:
             raise ValueError("Unsupported source type for ConvertedDocument.")
+
+
 # endregion
 # region Helper Functions
+
 
 async def handle_fetch_request(url: str) -> URLFetch:
     """Fetch a URL and store its HTML content locally."""
@@ -260,6 +297,7 @@ async def handle_fetch_request(url: str) -> URLFetch:
         _logger.error(f"Error fetching URL {url}: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error") from e
 
+
 async def handle_file_upload(request: Request) -> UploadedDocument:
     """Handle file upload and store the document locally."""
     try:
@@ -290,7 +328,9 @@ async def handle_file_upload(request: Request) -> UploadedDocument:
         raise HTTPException(status_code=500, detail="Internal Server Error") from e
 
 
-async def handle_conversion(source: Union[URLFetch, UploadedDocument]) -> ConvertedDocument:
+async def handle_conversion(
+    source: Union[URLFetch, UploadedDocument],
+) -> ConvertedDocument:
     """Handle document conversion using Docling."""
     try:
         if isinstance(source, URLFetch):
@@ -320,10 +360,12 @@ async def handle_conversion(source: Union[URLFetch, UploadedDocument]) -> Conver
         _logger.error(f"Error handling document conversion: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error") from e
 
+
 # endregion
 # region API Router and Endpoints
 
 conversion_api = APIRouter(prefix="/api", tags=["conversion"])
+
 
 @conversion_api.get("/", summary="Conversion API Root")
 async def conversion_api_root(req: Request) -> dict[str, str]:
@@ -344,6 +386,7 @@ async def conversion_api_root(req: Request) -> dict[str, str]:
         )
         raise HTTPException(status_code=500, detail="Internal Server Error") from e
 
+
 @conversion_api.post(
     "/convert/web", summary="Convert Web Document", response_model=URLFetch
 )
@@ -359,7 +402,6 @@ async def convert_web_document(request: URLConversionRequest) -> URLFetch:
 
         result = await handle_fetch_request(request.url)
 
-
     except Exception as e:
         _logger.error(
             "Error converting web document from URL {}: {} at {}".format(
@@ -369,4 +411,6 @@ async def convert_web_document(request: URLConversionRequest) -> URLFetch:
             stack_info=True,
         )
         raise HTTPException(status_code=500, detail="Conversion Failed") from e
+
+
 # endregion

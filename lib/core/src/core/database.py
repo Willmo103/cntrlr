@@ -41,7 +41,6 @@ from sqlalchemy.orm import declarative_base
 
 from core.config import DatabaseSettings
 
-
 Base = declarative_base()
 """Singleton `declarative_base` instance for ORM models."""
 

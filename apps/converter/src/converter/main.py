@@ -1,9 +1,9 @@
 import time
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from .logger import api_settings, logger
-from fastapi.middleware.cors import CORSMiddleware
 from .routes.api import conversion_api
 from .routes.ui import ui_router
 

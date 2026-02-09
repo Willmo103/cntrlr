@@ -683,8 +683,9 @@ def apply_default_ignore_filters(
         ...     print(p)
         file1.txt
     """
-    from core.constants import IGNORE_PARTS, IGNORE_EXTENSIONS
     import fnmatch
+
+    from core.constants import IGNORE_EXTENSIONS, IGNORE_PARTS
 
     filtered_paths = []
     for path in paths:

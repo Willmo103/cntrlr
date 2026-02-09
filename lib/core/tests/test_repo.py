@@ -4,8 +4,8 @@ from pathlib import Path
 from pytest import fixture
 
 import core.base as cb
-import core.models.repo as rp
 import core.models.file_system as fs
+import core.models.repo as rp
 
 
 @fixture

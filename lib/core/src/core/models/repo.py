@@ -517,7 +517,6 @@ class RepoFile(BaseTextFile):
         return v
 
 
-
 class Repo(BaseDirectory):
     """
     Model representing a repository directory.
@@ -646,9 +645,11 @@ class Repo(BaseDirectory):
             instance = super().populate(dir_path)
             instance.git_metadata = GitMetadata(
                 remotes={remote.name: remote.url for remote in _repo.remotes},
-                current_branch=_repo.active_branch.name
-                if not _repo.head.is_detached
-                else "HEAD (detached)",
+                current_branch=(
+                    _repo.active_branch.name
+                    if not _repo.head.is_detached
+                    else "HEAD (detached)"
+                ),
                 branches=[branch.name for branch in _repo.branches],
                 latest_commit=GitCommit(
                     hash=_repo.head.commit.hexsha[:8],
@@ -658,12 +659,15 @@ class Repo(BaseDirectory):
                 ),
                 uncommitted_changes=_repo.is_dirty(),
                 untracked_files=len(_repo.untracked_files),
-                commit_history=[GitCommit(
-                    hash=commit.hexsha[:8],
-                    message=commit.message.strip(),
-                    author=str(commit.author),
-                    date=commit.committed_datetime.isoformat(),
-                ) for commit in _repo.iter_commits(max_count=10)],
+                commit_history=[
+                    GitCommit(
+                        hash=commit.hexsha[:8],
+                        message=commit.message.strip(),
+                        author=str(commit.author),
+                        date=commit.committed_datetime.isoformat(),
+                    )
+                    for commit in _repo.iter_commits(max_count=10)
+                ],
             )
             instance.url = (
                 instance.git_metadata.remotes.get("origin")
