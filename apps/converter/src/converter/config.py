@@ -24,7 +24,7 @@ app_root = Path(
 """Application-wide settings instance."""
 api_settings: ConverterAPISettings = get_settings(ConverterAPISettings)
 """Converter API-specific settings instance: ('PORT', 'HOST', and 'LOG_LEVEL')."""
-ollama_settings = api_settings.ollama
+# ollama_settings = api_settings.ollama
 """Ollama-specific settings instance: ('HOST', 'PORT', and 'MODEL_NAME')."""
 
 # Create a tmp var for storage paths

@@ -33,7 +33,6 @@ app = typer.Typer(name="dev", help="Development CLI for CNTRLR application.")
 
 @app.command(name="fmt", help="Format the codebase using black and isort.")
 def format_code():
-    """Format the codebase using black and isort."""
     console.print("[bold green]Formatting code...[/bold green]")
     subprocess.run(
         ["uv", "run", "--active", "isort", str(PACKAGE_ROOT.as_posix())], check=True
@@ -44,9 +43,8 @@ def format_code():
     )
     console.print("[bold green]Code formatting complete.[/bold green]")
 
-
+@app.command(name="versions", help="Print the package versions for each library.")
 def versions():
-    """Print the package versions for each library."""
     console.print("[bold blue]Package Versions:[/bold blue]")
     for lib_name, lib_path in LIBRARY_PATHS.items():
         version_file = lib_path / "VERSION"
@@ -58,4 +56,8 @@ def versions():
 
 
 if __name__ == "__main__":
-    app()
+    try:
+        app()
+    except Exception as e:
+        console.print(f"[bold red]Error:[/bold red] {e}")
+        raise e

@@ -27,6 +27,8 @@ members = [
     "lib/*",
     "apps/controller",
     "apps/converter",
+    "apps/gitul",
+    "apps/filetul",
 ]
 
 [tool.uv.sources]

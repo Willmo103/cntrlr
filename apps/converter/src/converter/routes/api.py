@@ -10,8 +10,17 @@ from pathlib import Path
 from typing import Optional, Union
 
 import httpx
-from docling.document_converter import DocumentConverter
+from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.document_extractor import DocumentExtractor
 from docling_core.types import DoclingDocument
+from docling.datamodel.base_models import InputFormat
+from docling.datamodel.pipeline_options import (
+    PdfPipelineOptions,
+    TableStructureOptions,
+    PipelineOptions
+
+)
+from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 
 # from core.models.conversion_result import ConversionResultEntity, ConversionResult
 from fastapi import APIRouter, HTTPException, Request
@@ -40,8 +49,28 @@ docling_document_storage.mkdir(parents=True, exist_ok=True)
 input_html_storage.mkdir(parents=True, exist_ok=True)
 input_doc_storage.mkdir(parents=True, exist_ok=True)
 
-dc = DocumentConverter()
-# chunker = HybridChunker()
+pipeline_options = PipelineOptions()
+pipeline_options.accelerator_options = AcceleratorOptions(
+    num_threads=6, device=AcceleratorDevice.AUTO
+)
+
+doc_converter = DocumentConverter(
+    allowed_formats=[
+        InputFormat.PDF,
+        InputFormat.IMAGE,
+        InputFormat.DOCX,
+        InputFormat.HTML,
+        InputFormat.PPTX,
+        InputFormat.ASCIIDOC,
+        InputFormat.CSV,
+        InputFormat.MD,
+    ],
+    format_options={
+        InputFormat.IMAGE:
+    }
+)
+extractor = DocumentExtractor(allowed_formats=[InputFormat.IMAGE, InputFormat.PDF])
+
 # endregion
 # region API Models
 
@@ -53,7 +82,7 @@ class URLFetch(BaseModel):
     Attributes:
         url (str): The URL that was fetched.
         result (int): The result code of the URL fetch operation.
-        storage_path (Optional[str]): The local storage path where the fetched HTML content is saved.
+        storage_path (str): The local storage path where the fetched HTML content is saved.
         error_message (Optional[str]): Error message if the fetch operation failed.
         first_seen (Optional[datetime]): Timestamp when the URL was first seen.
         last_updated (Optional[datetime]): Timestamp when the URL was last updated.
@@ -82,7 +111,7 @@ class URLFetch(BaseModel):
             raise ValueError("URL must start with http:// or https://")
         return v
 
-    @model_validator("before")
+    @model_validator(mode="before")
     def validate_result_and_error(cls, values):
         """Ensure that if result indicates an error, error_message is provided."""
         result = values.get("result")
@@ -91,7 +120,7 @@ class URLFetch(BaseModel):
             raise ValueError("Error message must be provided if result is not 200.")
         return values
 
-    @model_validator("before")
+    @model_validator(mode="before")
     def set_timestamps(cls, values):
         """Set first_seen and last_updated timestamps if not provided."""
         now = get_time()
@@ -110,11 +139,9 @@ class URLFetch(BaseModel):
         return hasher.hexdigest()
 
     @property
-    def Path(self) -> Optional[Path]:
+    def Path(self) -> Path:
         """Get the storage path as a Path object."""
-        if self.storage_path:
-            return Path(self.storage_path)
-        return None
+        return Path(self.storage_path)
 
 
 class UploadedDocument(BaseModel):
@@ -251,14 +278,20 @@ class ConvertedDocument(BaseModel):
             raise ValueError(f"Failed to retrieve doc tokens: {e}") from e
 
     @property
-    def source_document(self) -> Path:
+    def sourcePath(self) -> Path:
         """Get the original source document path."""
-        if isinstance(self.source, URLFetch):
-            return Path(self.source.storage_path)
-        elif isinstance(self.source, UploadedDocument):
-            return Path(self.source.storage_path)
-        else:
-            raise ValueError("Unsupported source type for ConvertedDocument.")
+        return self.source.Path
+
+    @property
+    def source_document(self) -> Optional[str]:
+        """Get the original source document content."""
+        try:
+            return self.sourcePath.read_text(encoding="utf-8")
+        except Exception as e:
+            _logger.error(
+                f"Error reading source document from {self.sourcePath}: {e}"
+            )
+            return None
 
 
 # endregion
@@ -340,7 +373,7 @@ async def handle_conversion(
         else:
             raise ValueError("Unsupported source type for conversion.")
 
-        docling_doc = dc.convert(str(source_path))
+        docling_doc = doc_converter.convert(str(source_path))
         timestamp = get_time().strftime("%Y%m%d%H%M%S")
         safe_filename = source_path.stem.replace("/", "_")
         json_file_name = f"{safe_filename}_{timestamp}.json"
@@ -400,7 +433,26 @@ async def convert_web_document(request: URLConversionRequest) -> URLFetch:
         )
         # Placeholder for actual conversion logic
 
-        result = await handle_fetch_request(request.url)
+        result: URLFetch = await handle_fetch_request(request.url)
+        _logger.info(
+            "Successfully fetched and stored HTML for URL: {} at {}".format(
+                request.url, get_time_iso()
+            )
+        )
+
+        document: ConvertedDocument = await handle_conversion(result)
+        _logger.info(
+            "Successfully converted document from URL: {} at {}".format(
+                request.url, get_time_iso()
+            )
+        )
+
+        return {
+            "fetch_result": result.model_dump(),
+            "converted_document": document.model_dump(),
+            "markedown": document.markdown,
+        }
+
 
     except Exception as e:
         _logger.error(
@@ -411,6 +463,7 @@ async def convert_web_document(request: URLConversionRequest) -> URLFetch:
             stack_info=True,
         )
         raise HTTPException(status_code=500, detail="Conversion Failed") from e
+
 
 
 # endregion
