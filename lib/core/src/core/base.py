@@ -659,7 +659,7 @@ class BaseFileModel(BaseModel):
         return self.stat_json.st_size == 0
 
     @classmethod
-    def populate(cls, file_path: Path) -> None:
+    def populate(cls, file_path: Path) -> "BaseFileModel":
         """
         Populate the model attributes based on the given file path.
 
@@ -667,7 +667,7 @@ class BaseFileModel(BaseModel):
             file_path (Path): The path to the file.
 
         Returns:
-            None
+            BaseFileModel: A new instance of the model.
         """
         try:
             if isinstance(file_path, str):

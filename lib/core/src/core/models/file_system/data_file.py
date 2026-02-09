@@ -245,12 +245,13 @@ class DataFile(BaseFileModel):
         Validates and converts the content to a string if it's a DataFrame.
 
         Returns:
-            DataFileModel: The validated DataFileModel instance.
+            DataFile: The validated DataFile instance.
         """
         if not is_data_file(self.path_json.Path):
             raise ValueError(
                 f"The file at {self.path_json.Path} is not a recognized data file type."
             )
+        return self
 
     @model_serializer(when_used="json")
     def serialize_model(self) -> dict:
