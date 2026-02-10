@@ -10,13 +10,11 @@ from pathlib import Path
 from typing import Optional, Union
 
 import httpx
-from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.document_converter import DocumentConverter
 from docling.document_extractor import DocumentExtractor
 from docling_core.types import DoclingDocument
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (
-    PdfPipelineOptions,
-    TableStructureOptions,
     PipelineOptions
 
 )
@@ -24,13 +22,14 @@ from docling.datamodel.accelerator_options import AcceleratorDevice, Accelerator
 
 # from core.models.conversion_result import ConversionResultEntity, ConversionResult
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_serializer, model_validator
 from sqlite_utils import Database
 
 from core.database import Base
 from core.utils import get_time, get_time_iso
+import sqlite_utils
 
-from ..config import CONVERTED_STORAGE_PATH, INPUT_STORAGE_PATH
+from ..config import CONVERTED_STORAGE_PATH, INPUT_STORAGE_PATH, MAX_STORAGE_VERSIONS
 from ..logger import logger as _logger
 
 # endregion
@@ -42,7 +41,7 @@ input_doc_storage = INPUT_STORAGE_PATH / "uploaded"
 """Path to uploaded document storage directory."""
 docling_document_storage = CONVERTED_STORAGE_PATH / "dl_documents"
 """Path where JSON Docling documents are stored."""
-db: Database = Database(CONVERTED_STORAGE_PATH / "converter_data.db")
+db: Database = Database(CONVERTED_STORAGE_PATH.parent / "app.db")
 """SQLite Utils Database instance for converter data storage."""
 
 docling_document_storage.mkdir(parents=True, exist_ok=True)
@@ -65,9 +64,6 @@ doc_converter = DocumentConverter(
         InputFormat.CSV,
         InputFormat.MD,
     ],
-    format_options={
-        InputFormat.IMAGE:
-    }
 )
 extractor = DocumentExtractor(allowed_formats=[InputFormat.IMAGE, InputFormat.PDF])
 
@@ -130,12 +126,40 @@ class URLFetch(BaseModel):
             values["last_updated"] = now
         return values
 
+    @model_validator(mode="before")
+    def validate_storage_path(cls, values):
+        """Validate that the storage path is within the allowed input HTML storage directory."""
+        if isinstance(values["storage_path"], Path):
+            values["storage_path"], storage_path = storage_path.as_posix()
+        storage_path = values.get("storage_path")
+        if storage_path:
+            path = Path(storage_path)
+            if not path.is_file():
+                raise ValueError(f"Storage path {storage_path} does not exist or is not a file.")
+            if not path.resolve().is_relative_to(input_html_storage.resolve()):
+                raise ValueError(f"Storage path {storage_path} must be within {input_html_storage}.")
+        return values
+
+    @model_serializer()
+    def serialize_model(self) -> dict:
+        """Custom serializer to convert datetime fields to ISO format."""
+        return {
+            "id": self.id,
+            "url": self.url,
+            "result": self.result,
+            "storage_path": self.Path.as_posix(),
+            "error_message": self.error_message or "",
+            "first_seen": self.first_seen.isoformat() if self.first_seen else None,
+            "last_updated": self.last_updated.isoformat() if self.last_updated else None,
+        }
+
     @property
     def id(self) -> Optional[str]:
         """Get the unique identifier for the URL fetch result."""
 
         hasher = hashlib.sha256()
         hasher.update(self.url.encode("utf-8"))
+        hasher.update(self.Path.as_posix().encode("utf-8"))
         return hasher.hexdigest()
 
     @property
@@ -166,13 +190,46 @@ class UploadedDocument(BaseModel):
         None, description="Timestamp when the document was uploaded."
     )
 
+    @model_validator(mode="before")
+    def set_uploaded_at(cls, values):
+        """Set uploaded_at timestamp if not provided."""
+        if not values.get("uploaded_at"):
+            values["uploaded_at"] = get_time()
+        return values
+
+    @model_serializer()
+    def serialize_model(self) -> dict:
+        """Custom serializer to convert datetime fields to ISO format."""
+        return {
+            "id": self.id,
+            "filename": self.filename,
+            "mime_type": self.mime_type,
+            "storage_path": self.Path.as_posix(),
+            "uploaded_at": self.uploaded_at.isoformat() if self.uploaded_at else None,
+        }
+
+    @model_validator(mode="before")
+    def validate_storage_path(cls, values):
+        """Validate that the storage path is within the allowed input document storage directory."""
+        if isinstance(values["storage_path"], Path):
+            values["storage_path"], storage_path = storage_path.as_posix()
+        storage_path = values.get("storage_path")
+        if storage_path:
+            path = Path(storage_path)
+            if not path.is_file():
+                raise ValueError(f"Storage path {storage_path} does not exist or is not a file.")
+            if not path.resolve().is_relative_to(input_doc_storage.resolve()):
+                raise ValueError(f"Storage path {storage_path} must be within {input_doc_storage}.")
+        return values
+
     @property
     def id(self) -> Optional[str]:
         """Get the unique identifier for the uploaded document."""
 
         hasher = hashlib.sha256()
-        hasher.update(self.content_bytes)
-        hasher.update(self.mime_type.encode("utf-8"))
+        file_bytes = self.Path.read_bytes() if self.Path.is_file() else b""
+        hasher.update(file_bytes)
+        hasher.update(self.Path.as_posix().encode("utf-8"))
         return hasher.hexdigest()
 
     @property
@@ -212,9 +269,9 @@ class ConvertedDocument(BaseModel):
         """Get the unique identifier for the converted document."""
 
         hasher = hashlib.sha256()
-        hasher.update(self.source_id.encode("utf-8"))
-        hasher.update(str(self.source_path).encode("utf-8"))
-        hasher.update(str(self.document_json_path).encode("utf-8"))
+        hasher.update(self.source.id.encode("utf-8"))
+        hasher.update(str(self.source.Path.as_posix()).encode("utf-8"))
+        hasher.update(str(self.document_json_path.as_posix()).encode("utf-8"))
         return hasher.hexdigest()
 
     @property
@@ -293,6 +350,17 @@ class ConvertedDocument(BaseModel):
             )
             return None
 
+    @model_serializer()
+    def serialize_model(self) -> dict:
+         """Custom serializer to convert datetime fields to ISO format and include document metadata."""
+         return {
+             "id": self.id,
+             "source_id": self.source.id,
+             "source_url": self.source.url if isinstance(self.source, URLFetch) else None,
+             "source_filename": self.source.filename if isinstance(self.source, UploadedDocument) else None,
+             "document_json_path": self.document_json_path.as_posix(),
+             "conversion_time": self.conversion_time.isoformat(),
+         }
 
 # endregion
 # region Helper Functions
@@ -309,6 +377,7 @@ async def handle_fetch_request(url: str) -> URLFetch:
         timestamp = get_time().strftime("%Y%m%d%H%M%S")
         safe_filename = url.replace("://", "_").replace("/", "_")
         file_name = f"{safe_filename}_{timestamp}.html"
+        _cleanup_versions(file_name, input_html_storage)
         file_path = input_html_storage / file_name
 
         with open(file_path, "w", encoding="utf-8") as f:
@@ -321,7 +390,34 @@ async def handle_fetch_request(url: str) -> URLFetch:
             first_seen=get_time(),
             last_updated=get_time(),
         )
-        db["url_fetches"].upsert(result.model_dump(), pk="url")
+        try:
+            db_existing = db["url_fetches"].get(result.id)
+        except sqlite_utils.db.NotFoundError:
+            db_existing = None
+        if db_existing:
+            result.first_seen = datetime.fromisoformat(db_existing["first_seen"])
+            result.last_updated = get_time()
+
+            db["url_fetches"].update(
+                result.id,
+                {
+                    "last_updated": result.last_updated.isoformat(),
+                    "result": result.result,
+                    "error_message": result.error_message or "",
+                    "storage_path": result.Path.as_posix(),
+                },
+            )
+        else:
+            db["url_fetches"].upsert({
+                "id": result.id,
+                "url": result.url,
+                "result": result.result,
+                "storage_path": result.Path.as_posix(),
+                "error_message": result.error_message or "",
+                "first_seen": result.first_seen.isoformat() if result.first_seen else None,
+                "last_updated": result.last_updated.isoformat() if result.last_updated else None,
+                "html_content": html_content,
+            }, pk="id", alter=True)
         return result
     except httpx.HTTPError as e:
         _logger.error(f"HTTP error fetching URL {url}: {e}")
@@ -343,6 +439,7 @@ async def handle_file_upload(request: Request) -> UploadedDocument:
         timestamp = get_time().strftime("%Y%m%d%H%M%S")
         safe_filename = upload_file.filename.replace("/", "_")
         file_name = f"{safe_filename}_{timestamp}"
+        _cleanup_versions(file_name, input_doc_storage)
         file_path = input_doc_storage / file_name
 
         with open(file_path, "wb") as f:
@@ -354,12 +451,42 @@ async def handle_file_upload(request: Request) -> UploadedDocument:
             storage_path=str(file_path),
             uploaded_at=get_time(),
         )
-        db["uploaded_documents"].upsert(uploaded_doc.model_dump(), pk="storage_path")
-        return uploaded_doc
+        try:
+            existing_doc = db["uploaded_documents"].get(uploaded_doc.id)
+        except sqlite_utils.db.NotFoundError:
+            existing_doc = None
+        if existing_doc:
+            uploaded_doc.uploaded_at = datetime.fromisoformat(existing_doc["uploaded_at"])
+            db["uploaded_documents"].update(
+                uploaded_doc.id,
+                {
+                    "uploaded_at": uploaded_doc.uploaded_at.isoformat(),
+                    "mime_type": uploaded_doc.mime_type,
+                    "storage_path": uploaded_doc.Path.as_posix(),
+                },
+            )
+        else:
+            db["uploaded_documents"].upsert({
+                "id": uploaded_doc.id,
+                "filename": uploaded_doc.filename,
+                "mime_type": uploaded_doc.mime_type,
+                "storage_path": uploaded_doc.Path.as_posix(),
+                "uploaded_at": uploaded_doc.uploaded_at.isoformat(),
+            }, pk="storage_path", alter=True)
+            return uploaded_doc
     except Exception as e:
         _logger.error(f"Error handling file upload: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error") from e
 
+def _cleanup_versions(file_name: str, storage_root: Path, max_versions: int = MAX_STORAGE_VERSIONS):
+    """Remove old versions of converted documents to manage storage."""
+    try:
+        existing_files = sorted(storage_root.glob(f"{file_name.split('_')[0]}_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+        for old_file in existing_files[max_versions:]:
+            old_file.unlink()
+            _logger.info(f"Deleted old converted document: {old_file}")
+    except Exception as e:
+        _logger.error(f"Error during cleanup of old versions: {e}")
 
 async def handle_conversion(
     source: Union[URLFetch, UploadedDocument],
@@ -377,6 +504,7 @@ async def handle_conversion(
         timestamp = get_time().strftime("%Y%m%d%H%M%S")
         safe_filename = source_path.stem.replace("/", "_")
         json_file_name = f"{safe_filename}_{timestamp}.json"
+        _cleanup_versions(json_file_name, docling_document_storage)
         json_file_path = docling_document_storage / json_file_name
 
         with open(json_file_path, "w", encoding="utf-8") as f:
@@ -387,8 +515,29 @@ async def handle_conversion(
             document_json_path=json_file_path,
             conversion_time=get_time(),
         )
-        db["converted_documents"].upsert(converted_doc.model_dump(), pk="id")
-        return converted_doc
+        try:
+            existing_doc = db["converted_documents"].get(converted_doc.id)
+        except sqlite_utils.db.NotFoundError:
+            existing_doc = None
+        if existing_doc:
+            converted_doc.conversion_time = datetime.fromisoformat(existing_doc["conversion_time"])
+            db["converted_documents"].update(
+                converted_doc.id,
+                {
+                    "conversion_time": converted_doc.conversion_time.isoformat(),
+                    "document_json_path": converted_doc.document_json_path.as_posix(),
+                },
+            )
+        else:
+            db["converted_documents"].upsert({
+                "id": converted_doc.id,
+                "source_id": converted_doc.source.id,
+                "source_url": converted_doc.source.url if isinstance(converted_doc.source, URLFetch) else None,
+                "source_filename": converted_doc.source.filename if isinstance(converted_doc.source, UploadedDocument) else None,
+                "document_json_path": converted_doc.document_json_path.as_posix(),
+                "conversion_time": converted_doc.conversion_time.isoformat(),
+            }, pk="id", alter=True)
+            return converted_doc
     except Exception as e:
         _logger.error(f"Error handling document conversion: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error") from e
@@ -449,8 +598,8 @@ async def convert_web_document(request: URLConversionRequest) -> URLFetch:
 
         return {
             "fetch_result": result.model_dump(),
-            "converted_document": document.model_dump(),
-            "markedown": document.markdown,
+            "converted_document": document.model_dump() or None,
+            "markedown": document.markdown or None,
         }
 
 

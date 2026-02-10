@@ -41,3 +41,4 @@ CONVERTED_STORAGE_PATH: Path = _storage / "converted"
 # Create storage directories if they do not exist
 INPUT_STORAGE_PATH.mkdir(parents=True, exist_ok=True)
 CONVERTED_STORAGE_PATH.mkdir(parents=True, exist_ok=True)
+MAX_STORAGE_VERSIONS = 3
