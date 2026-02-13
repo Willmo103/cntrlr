@@ -107,38 +107,38 @@ class URLFetch(BaseModel):
             raise ValueError("URL must start with http:// or https://")
         return v
 
-    @model_validator(mode="before")
-    def validate_result_and_error(cls, values):
-        """Ensure that if result indicates an error, error_message is provided."""
-        result = values.get("result")
-        error_message = values.get("error_message")
-        if result != 200 and not error_message:
-            raise ValueError("Error message must be provided if result is not 200.")
-        return values
+    @field_validator("result")
+    def validate_result(cls, v):
+        """Validate that the result code is a valid HTTP status code."""
+        if not (100 <= v <= 599):
+            raise ValueError("Result must be a valid HTTP status code (100-599).")
+        return v
 
-    @model_validator(mode="before")
-    def set_timestamps(cls, values):
+    @field_validator("error_message")
+    def validate_error_message(cls, v, values):
+        """If result indicates an error, ensure error_message is provided."""
+        if values.get("result", 200) >= 400 and not v:
+            raise ValueError("Error message must be provided for HTTP errors (status code >= 400).")
+        return v
+
+    @field_validator("first_seen", "last_updated", mode="before")
+    def set_timestamps(cls, v):
         """Set first_seen and last_updated timestamps if not provided."""
-        now = get_time()
-        if not values.get("first_seen"):
-            values["first_seen"] = now
-        if not values.get("last_updated"):
-            values["last_updated"] = now
-        return values
+        if v is None:
+            return get_time()
+        return v
 
-    @model_validator(mode="before")
-    def validate_storage_path(cls, values):
+    @field_validator("storage_path")
+    def validate_storage_path(cls, v):
         """Validate that the storage path is within the allowed input HTML storage directory."""
-        if isinstance(values["storage_path"], Path):
-            values["storage_path"], storage_path = storage_path.as_posix()
-        storage_path = values.get("storage_path")
-        if storage_path:
-            path = Path(storage_path)
-            if not path.is_file():
-                raise ValueError(f"Storage path {storage_path} does not exist or is not a file.")
-            if not path.resolve().is_relative_to(input_html_storage.resolve()):
-                raise ValueError(f"Storage path {storage_path} must be within {input_html_storage}.")
-        return values
+        if isinstance(v, Path):
+            v = v.as_posix()
+        path = Path(v)
+        if not path.is_file():
+            raise ValueError(f"Storage path {v} does not exist or is not a file.")
+        if not path.resolve().is_relative_to(input_html_storage.resolve()):
+            raise ValueError(f"Storage path {v} must be within {input_html_storage}.")
+        return v
 
     @model_serializer()
     def serialize_model(self) -> dict:
@@ -278,8 +278,8 @@ class ConvertedDocument(BaseModel):
     def Document(self) -> DoclingDocument:
         """Load the converted document as a DoclingDocument instance."""
         try:
-            return DoclingDocument.model_validate_json(
-                self.document_json_path.read_text(encoding="utf-8")
+            return DoclingDocument.load_from_json(
+                self.document_json_path
             )
         except Exception as e:
             _logger.error(
@@ -391,23 +391,6 @@ async def handle_fetch_request(url: str) -> URLFetch:
             last_updated=get_time(),
         )
         try:
-            db_existing = db["url_fetches"].get(result.id)
-        except sqlite_utils.db.NotFoundError:
-            db_existing = None
-        if db_existing:
-            result.first_seen = datetime.fromisoformat(db_existing["first_seen"])
-            result.last_updated = get_time()
-
-            db["url_fetches"].update(
-                result.id,
-                {
-                    "last_updated": result.last_updated.isoformat(),
-                    "result": result.result,
-                    "error_message": result.error_message or "",
-                    "storage_path": result.Path.as_posix(),
-                },
-            )
-        else:
             db["url_fetches"].upsert({
                 "id": result.id,
                 "url": result.url,
@@ -416,8 +399,9 @@ async def handle_fetch_request(url: str) -> URLFetch:
                 "error_message": result.error_message or "",
                 "first_seen": result.first_seen.isoformat() if result.first_seen else None,
                 "last_updated": result.last_updated.isoformat() if result.last_updated else None,
-                "html_content": html_content,
             }, pk="id", alter=True)
+        except Exception as e:
+            _logger.debug(f"Error saving URL fetch result to database: {e}")
         return result
     except httpx.HTTPError as e:
         _logger.error(f"HTTP error fetching URL {url}: {e}")
@@ -452,20 +436,6 @@ async def handle_file_upload(request: Request) -> UploadedDocument:
             uploaded_at=get_time(),
         )
         try:
-            existing_doc = db["uploaded_documents"].get(uploaded_doc.id)
-        except sqlite_utils.db.NotFoundError:
-            existing_doc = None
-        if existing_doc:
-            uploaded_doc.uploaded_at = datetime.fromisoformat(existing_doc["uploaded_at"])
-            db["uploaded_documents"].update(
-                uploaded_doc.id,
-                {
-                    "uploaded_at": uploaded_doc.uploaded_at.isoformat(),
-                    "mime_type": uploaded_doc.mime_type,
-                    "storage_path": uploaded_doc.Path.as_posix(),
-                },
-            )
-        else:
             db["uploaded_documents"].upsert({
                 "id": uploaded_doc.id,
                 "filename": uploaded_doc.filename,
@@ -474,6 +444,9 @@ async def handle_file_upload(request: Request) -> UploadedDocument:
                 "uploaded_at": uploaded_doc.uploaded_at.isoformat(),
             }, pk="storage_path", alter=True)
             return uploaded_doc
+        except Exception as e:
+            _logger.debug(f"Error saving uploaded document to database: {e}")
+        return uploaded_doc
     except Exception as e:
         _logger.error(f"Error handling file upload: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error") from e
@@ -481,10 +454,10 @@ async def handle_file_upload(request: Request) -> UploadedDocument:
 def _cleanup_versions(file_name: str, storage_root: Path, max_versions: int = MAX_STORAGE_VERSIONS):
     """Remove old versions of converted documents to manage storage."""
     try:
-        existing_files = sorted(storage_root.glob(f"{file_name.split('_')[0]}_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+        existing_files = sorted(storage_root.glob(f"{file_name.split('_')[0]}_*.*"), key=lambda p: p.stat().st_mtime, reverse=True)
         for old_file in existing_files[max_versions:]:
             old_file.unlink()
-            _logger.info(f"Deleted old converted document: {old_file}")
+            _logger.info(f"Deleted stale document: {old_file}")
     except Exception as e:
         _logger.error(f"Error during cleanup of old versions: {e}")
 
@@ -500,7 +473,7 @@ async def handle_conversion(
         else:
             raise ValueError("Unsupported source type for conversion.")
 
-        docling_doc = doc_converter.convert(str(source_path))
+        docling_doc: DoclingDocument = doc_converter.convert(str(source_path)).document
         timestamp = get_time().strftime("%Y%m%d%H%M%S")
         safe_filename = source_path.stem.replace("/", "_")
         json_file_name = f"{safe_filename}_{timestamp}.json"
@@ -512,32 +485,20 @@ async def handle_conversion(
 
         converted_doc = ConvertedDocument(
             source=source,
-            document_json_path=json_file_path,
+            document_json_path=json_file_path.as_posix(),
             conversion_time=get_time(),
         )
         try:
-            existing_doc = db["converted_documents"].get(converted_doc.id)
-        except sqlite_utils.db.NotFoundError:
-            existing_doc = None
-        if existing_doc:
-            converted_doc.conversion_time = datetime.fromisoformat(existing_doc["conversion_time"])
-            db["converted_documents"].update(
-                converted_doc.id,
-                {
-                    "conversion_time": converted_doc.conversion_time.isoformat(),
-                    "document_json_path": converted_doc.document_json_path.as_posix(),
-                },
-            )
-        else:
             db["converted_documents"].upsert({
                 "id": converted_doc.id,
-                "source_id": converted_doc.source.id,
-                "source_url": converted_doc.source.url if isinstance(converted_doc.source, URLFetch) else None,
-                "source_filename": converted_doc.source.filename if isinstance(converted_doc.source, UploadedDocument) else None,
+                "source": converted_doc.source.model_dump(),
                 "document_json_path": converted_doc.document_json_path.as_posix(),
                 "conversion_time": converted_doc.conversion_time.isoformat(),
+                "document": converted_doc.Document.model_dump()
             }, pk="id", alter=True)
-            return converted_doc
+        except Exception as e:
+            _logger.debug(f"Error saving converted document to database: {e}")
+        return converted_doc
     except Exception as e:
         _logger.error(f"Error handling document conversion: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error") from e
@@ -569,6 +530,16 @@ async def conversion_api_root(req: Request) -> dict[str, str]:
         raise HTTPException(status_code=500, detail="Internal Server Error") from e
 
 
+class WebConversionREsponse(BaseModel):
+    fetch_result: URLFetch
+    converted_document: ConvertedDocument
+    markdown: Optional[str] = None
+encryption91-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+class DocumentConversionResponse(BaseModel):
+    document_record:
+    converted_document: ConvertedDocument
+    markdown: Optional[str] = None
+
 @conversion_api.post(
     "/convert/web", summary="Convert Web Document", response_model=URLFetch
 )
@@ -597,9 +568,9 @@ async def convert_web_document(request: URLConversionRequest) -> URLFetch:
         )
 
         return {
-            "fetch_result": result.model_dump(),
-            "converted_document": document.model_dump() or None,
-            "markedown": document.markdown or None,
+            "fetch_result": result.model_dump_json(),
+            "converted_document": document.model_dump_json() or None,
+            "markdown": document.markdown or None,
         }
 
 
