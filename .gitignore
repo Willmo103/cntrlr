@@ -21,6 +21,4 @@ settings.yml
 .env
 bak*
 .private
-gitul
-filetul
 app.db
