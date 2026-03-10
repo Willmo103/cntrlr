@@ -1,3 +1,21 @@
-from .importers import FileImporter  # noqa: F401
+from .importers import (
+    ImageImporterService,
+    VideoImporterService,
+    AudioImporterService,
+    DataImporterService,
+    RepoImporterService,
+    ObsidianVaultImporterService,
+    WebImporterService,
+    FileImporterError,
+)
 
-__all__ = ["FileImporter"]
+__all__ = [
+    "ImageImporterService",
+    "VideoImporterService",
+    "AudioImporterService",
+    "DataImporterService",
+    "RepoImporterService",
+    "ObsidianVaultImporterService",
+    "WebImporterService",
+    "FileImporterError",
+]

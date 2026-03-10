@@ -636,6 +636,11 @@ class DatabaseSettings(FactoryBaseSettings):
         description="Postgres database name.",
     )
 
+    @property
+    def database_url(self) -> str:
+        """Constructs the Postgres connection string."""
+        return f"postgresql://{self.db_user}:{self.db_pass}@{self.db_host}:{self.db_port}/{self.db_name}"
+
 
 # endregion
 # region CliSettings Class

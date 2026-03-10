@@ -1,14 +1,22 @@
 [project]
 name = "filetul"
 version = "0.1.0"
-description = "Add your description here"
+description = "File Utility"
 readme = "README.md"
-authors = [
-    { name = "WIll Morris", email = "88165849+Willmo103@users.noreply.github.com" }
-]
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "typer>=0.12.5",
+    "services",
+    "core"
+]
+
+[project.scripts]
+filetul = "filetul:main"
 
 [build-system]
 requires = ["uv_build>=0.9.26,<0.10.0"]
 build-backend = "uv_build"
+
+[tool.uv.sources]
+core = { workspace = true }
+services = { workspace = true }
